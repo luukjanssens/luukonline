@@ -63,7 +63,7 @@ function getDeviceItems(
 		return [
 			{
 				key: "lastSeen",
-				text: `last seen on ${lastSeen.name} at ${formatLastSeen(lastSeen.timestamp)}`,
+				text: `/ last seen on ${lastSeen.name} at ${formatLastSeen(lastSeen.timestamp)}`,
 			},
 		];
 	return [];
