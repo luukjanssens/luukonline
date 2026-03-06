@@ -56,29 +56,31 @@ export default function App() {
 
 	return (
 		<div className="relative flex h-full w-full items-center justify-center">
-			<p className="group relative text-sm font-light tracking-widest lowercase whitespace-nowrap flex gap-2">
-				<span className="opacity-50">luuk is</span>
-				<span
-					className="inline-flex items-center gap-2 transition-colors duration-600"
-					style={{ color: statusColor }}
-				>
-					<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm" />
-					{statusLabel[status]}
-				</span>
-				{deviceNames.length > 0 && (
-					<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 transition-opacity duration-300 whitespace-nowrap">
-						{deviceInfo.length > 0
-							? deviceInfo
-									.map(
-										(device) =>
-											`${device.name} (${formatDuration(now - device.connectedAt)})`,
-									)
-									.join(", ")
-							: deviceNames.join(", ")}
+			<p className="relative text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
+				<div className="hover:cursor-pointer group flex gap-2">
+					<span className="opacity-50">luuk is</span>
+					<span
+						className="inline-flex items-center gap-2 transition-colors duration-600"
+						style={{ color: statusColor }}
+					>
+						<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
+						{statusLabel[status]}
 					</span>
-				)}
+					{deviceNames.length > 0 && (
+						<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 -translate-x-1 group-hover:translate-x-0 transition duration-300 whitespace-nowrap">
+							{deviceInfo.length > 0
+								? deviceInfo
+										.map(
+											(device) =>
+												`/ ${device.name} (${formatDuration(now - device.connectedAt)})`,
+										)
+										.join(", ")
+								: deviceNames.join(", ")}
+						</span>
+					)}
+				</div>
 				{status === "offline" && lastSeen && (
-					<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 transition-opacity duration-300 whitespace-nowrap">
+					<span className="absolute left-full opacity-0 group-hover:opacity-20 -translate-x-1 group-hover:translate-x-0 transition duration-300 whitespace-nowrap">
 						last seen on {lastSeen.name} at {formatLastSeen(lastSeen.timestamp)}
 					</span>
 				)}
