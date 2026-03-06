@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDarkMode } from "./hooks/useDarkMode";
-import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { useOnlineStatus, type DeviceInfo, type LastSeen, type OnlineStatus } from "./hooks/useOnlineStatus";
 import "./global.css";
 
 function formatDuration(ms: number): string {
@@ -27,7 +27,7 @@ function formatLastSeen(timestamp: number): string {
 	return `${dateStr} at ${timeStr}`;
 }
 
-const statusLabel: Record<string, string> = {
+const statusLabel: Record<OnlineStatus, string> = {
 	connecting: "checking...",
 	online: "online",
 	offline: "offline",
@@ -38,10 +38,32 @@ const statusColors = {
 	light: { connecting: "#999", online: "#008844", offline: "#cc2020" },
 };
 
+type StatusColorKey = keyof typeof statusColors.dark;
+
+function getDeviceItems(
+	deviceInfo: DeviceInfo[],
+	deviceNames: string[],
+	lastSeen: LastSeen | null,
+	now: number,
+) {
+	if (deviceInfo.length > 0)
+		return deviceInfo.map((d) => ({
+			key: d.name,
+			text: `/ ${d.name} (${formatDuration(now - d.connectedAt)})`,
+		}));
+	if (deviceNames.length > 0)
+		return deviceNames.map((name) => ({ key: name, text: `/ ${name}` }));
+	if (lastSeen)
+		return [{ key: "lastSeen", text: `last seen on ${lastSeen.name} at ${formatLastSeen(lastSeen.timestamp)}` }];
+	return [];
+}
+
 export default function App() {
 	const { status, deviceNames, deviceInfo, lastSeen } = useOnlineStatus();
 	const [dark, toggleDark] = useDarkMode();
 	const [now, setNow] = useState(Date.now());
+	const [isExpanded, setIsExpanded] = useState(false);
+	const groupRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (deviceInfo.length === 0) return;
@@ -49,15 +71,33 @@ export default function App() {
 		return () => clearInterval(id);
 	}, [deviceInfo.length]);
 
-	const statusColor =
-		statusColors[dark ? "dark" : "light"][
-			status as keyof (typeof statusColors)["dark"]
-		] ?? "inherit";
+	useEffect(() => {
+		if (!isExpanded) return;
+		const handler = (e: MouseEvent) => {
+			if (groupRef.current && !groupRef.current.contains(e.target as Node)) {
+				setIsExpanded(false);
+			}
+		};
+		document.addEventListener("click", handler);
+		return () => document.removeEventListener("click", handler);
+	}, [isExpanded]);
+
+	const deviceItems = getDeviceItems(deviceInfo, deviceNames, lastSeen, now);
+	const statusColor = statusColors[dark ? "dark" : "light"][status as StatusColorKey] ?? "inherit";
 
 	return (
 		<div className="relative flex h-full w-full items-center justify-center">
 			<p className="relative text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
-				<div className="hover:cursor-pointer group flex gap-2">
+				<button
+					type="button"
+					ref={groupRef}
+					className="hover:cursor-default group flex gap-2 touch-manipulation border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
+					data-expanded={isExpanded ? "" : undefined}
+					onClick={() => setIsExpanded((p) => !p)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") setIsExpanded((p) => !p);
+					}}
+				>
 					<span className="opacity-50">luuk is</span>
 					<span
 						className="inline-flex items-center gap-2 transition-colors duration-600"
@@ -66,35 +106,20 @@ export default function App() {
 						<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
 						{statusLabel[status]}
 					</span>
-					{deviceNames.length > 0 && (
+					{deviceItems.length > 0 && (
 						<span className="absolute left-full ml-5 flex flex-col">
-							{deviceInfo.length > 0
-								? deviceInfo.map((device, i) => (
-										<span
-											key={device.name}
-											className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 transition duration-300"
-											style={{ transitionDelay: `${i * 60}ms` }}
-										>
-											{`/ ${device.name} (${formatDuration(now - device.connectedAt)})`}
-										</span>
-									))
-								: deviceNames.map((name, i) => (
-										<span
-											key={name}
-											className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 transition duration-300"
-											style={{ transitionDelay: `${i * 60}ms` }}
-										>
-											{`/ ${name}`}
-										</span>
-									))}
+							{deviceItems.map((item, i) => (
+								<span
+									key={item.key}
+									className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 group-data-expanded:opacity-20 group-data-expanded:translate-x-0 transition duration-300"
+									style={{ transitionDelay: `${i * 60}ms` }}
+								>
+									{item.text}
+								</span>
+							))}
 						</span>
 					)}
-				</div>
-				{status === "offline" && lastSeen && (
-					<span className="absolute left-full opacity-0 group-hover:opacity-20 -translate-x-1 group-hover:translate-x-0 transition duration-300 whitespace-nowrap">
-						last seen on {lastSeen.name} at {formatLastSeen(lastSeen.timestamp)}
-					</span>
-				)}
+				</button>
 			</p>
 			<button
 				type="button"
