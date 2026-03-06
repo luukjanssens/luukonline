@@ -1,11 +1,17 @@
-import { WebSocketServer } from "ws";
+import type { IncomingMessage } from "node:http";
+import { WebSocket, WebSocketServer } from "ws";
 
-const PORT = process.env.PORT || 8080;
-const wss = new WebSocketServer({ port: PORT });
+const PORT = process.env.PORT ?? 8080;
+const wss = new WebSocketServer({ port: Number(PORT) });
 
-const clients = new Set();
+interface Client {
+	ws: WebSocket;
+	type: "laptop" | "browser";
+}
 
-wss.on("connection", (ws, req) => {
+const clients = new Set<Client>();
+
+wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 	const isLaptop = req.url === "/laptop";
 	const isBrowser = req.url === "/status";
 
@@ -35,11 +41,11 @@ wss.on("connection", (ws, req) => {
 	ws.on("error", () => {});
 });
 
-function broadcast() {
+function broadcast(): void {
 	const laptopOnline = [...clients].some((c) => c.type === "laptop");
 	const payload = JSON.stringify({ online: laptopOnline, ts: Date.now() });
 	clients.forEach(({ ws, type }) => {
-		if (type === "browser" && ws.readyState === 1) {
+		if (type === "browser" && ws.readyState === WebSocket.OPEN) {
 			ws.send(payload);
 		}
 	});

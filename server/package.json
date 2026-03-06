@@ -3,9 +3,16 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
-		"start": "node index.js"
+		"start": "tsx index.ts",
+		"laptop": "tsx laptop.ts"
 	},
 	"dependencies": {
 		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.14.0",
+		"@types/ws": "^8.5.14",
+		"tsx": "^4.19.3",
+		"typescript": "^5.9.3"
 	}
 }
