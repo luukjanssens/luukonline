@@ -67,15 +67,26 @@ export default function App() {
 						{statusLabel[status]}
 					</span>
 					{deviceNames.length > 0 && (
-						<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 -translate-x-1 group-hover:translate-x-0 transition duration-300 whitespace-nowrap">
+						<span className="absolute left-full ml-5 flex flex-col">
 							{deviceInfo.length > 0
-								? deviceInfo
-										.map(
-											(device) =>
-												`/ ${device.name} (${formatDuration(now - device.connectedAt)})`,
-										)
-										.join(", ")
-								: deviceNames.join(", ")}
+								? deviceInfo.map((device, i) => (
+										<span
+											key={device.name}
+											className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 transition duration-300"
+											style={{ transitionDelay: `${i * 60}ms` }}
+										>
+											{`/ ${device.name} (${formatDuration(now - device.connectedAt)})`}
+										</span>
+									))
+								: deviceNames.map((name, i) => (
+										<span
+											key={name}
+											className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 transition duration-300"
+											style={{ transitionDelay: `${i * 60}ms` }}
+										>
+											{`/ ${name}`}
+										</span>
+									))}
 						</span>
 					)}
 				</div>

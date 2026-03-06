@@ -2,7 +2,7 @@ import os from "node:os";
 import { WebSocket } from "ws";
 
 const BASE_URL =
-	process.env.WS_URL ?? "wss://luukonline.luuk-online.workers.dev/device";
+	process.env.WS_URL ?? "wss://luuk.online/device";
 const DEVICE_NAME = process.env.DEVICE_NAME ?? os.hostname();
 const WS_URL = `${BASE_URL}?name=${encodeURIComponent(DEVICE_NAME)}`;
 const RETRY_DELAY = 5000;
