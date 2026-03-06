@@ -9,14 +9,21 @@ const WS_URL =
 
 export type OnlineStatus = "connecting" | "online" | "offline";
 
+export interface DeviceInfo {
+	name: string;
+	connectedAt: number;
+}
+
 export interface OnlineStatusResult {
 	status: OnlineStatus;
 	deviceNames: string[];
+	deviceInfo: DeviceInfo[];
 }
 
 export function useOnlineStatus(): OnlineStatusResult {
 	const [status, setStatus] = useState<OnlineStatus>("connecting");
 	const [deviceNames, setDeviceNames] = useState<string[]>([]);
+	const [deviceInfo, setDeviceInfo] = useState<DeviceInfo[]>([]);
 	const ws = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -40,10 +47,12 @@ export function useOnlineStatus(): OnlineStatusResult {
 					const data = JSON.parse(e.data as string) as {
 						online: boolean;
 						deviceNames?: string[];
+						deviceInfo?: DeviceInfo[];
 					};
 					console.log("[status] received:", data);
 					setStatus(data.online ? "online" : "offline");
 					setDeviceNames(data.deviceNames ?? []);
+					setDeviceInfo(data.deviceInfo ?? []);
 				};
 
 				ws.current.onclose = (e) => {
@@ -75,5 +84,5 @@ export function useOnlineStatus(): OnlineStatusResult {
 		};
 	}, []);
 
-	return { status, deviceNames };
+	return { status, deviceNames, deviceInfo };
 }

@@ -17,9 +17,13 @@ export class OnlineStatus extends DurableObject {
 
 		const { 0: clientWs, 1: serverWs } = new WebSocketPair();
 
-		// For device connections, include the name as an extra tag so we can retrieve it later
+		// For device connections, include the name and connect timestamp as extra tags
 		const tags = isDevice
-			? ["device", url.searchParams.get("name") ?? "Unknown"]
+			? [
+					"device",
+					url.searchParams.get("name") ?? "Unknown",
+					Date.now().toString(),
+				]
 			: ["browser"];
 		this.ctx.acceptWebSocket(serverWs, tags);
 
@@ -55,15 +59,19 @@ export class OnlineStatus extends DurableObject {
 
 	private currentStatus() {
 		const devices = this.ctx.getWebSockets("device");
-		// The second tag on each device socket is its name
-		const deviceNames = devices.map((ws) => {
+		// Tags: ["device", name, connectedAt]
+		const deviceInfo = devices.map((ws) => {
 			const tags = this.ctx.getTags(ws);
-			return tags[1] ?? "Unknown";
+			return {
+				name: tags[1] ?? "Unknown",
+				connectedAt: Number(tags[2] ?? "0"),
+			};
 		});
 		return {
 			online: devices.length > 0,
 			devices: devices.length,
-			deviceNames,
+			deviceNames: deviceInfo.map((d) => d.name),
+			deviceInfo,
 			ts: Date.now(),
 		};
 	}
