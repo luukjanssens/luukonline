@@ -53,18 +53,32 @@ const DEVICE_HTML = `<!DOCTYPE html>
   <span class="label" id="label">connecting…</span>
   <script>
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url   = proto + '//' + location.host + '/device';
     let ws;
 
+    // Prefer ?name= query param, fall back to a UA-sniffed label
+    function detectName() {
+      const param = new URLSearchParams(location.search).get('name');
+      if (param) return param;
+      const ua = navigator.userAgent;
+      if (/iPad/.test(ua)) return 'iPad';
+      if (/iPhone/.test(ua)) return 'iPhone';
+      if (/Android.*Mobile/.test(ua)) return 'Android Phone';
+      if (/Android/.test(ua)) return 'Android Tablet';
+      return 'Browser';
+    }
+
+    const deviceName = detectName();
+    const url = proto + '//' + location.host + '/device?name=' + encodeURIComponent(deviceName);
+
     const proto2 = proto === 'wss:' ? 'WSS (secure)' : 'WS (insecure)';
-    console.log('[device] connecting via browser page');
+    console.log('[device] connecting as:', deviceName);
     console.log('[device] connection method:', proto2, '→', url);
 
     function connect() {
       ws = new WebSocket(url);
       ws.onopen  = () => {
         console.log('[device] connected via', proto2);
-        setState(true,  'this device is online');
+        setState(true,  deviceName + ' is online');
       };
       ws.onclose = (e) => {
         console.log('[device] disconnected — code:', e.code, 'reason:', e.reason || '(none)');
