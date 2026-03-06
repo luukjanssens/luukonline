@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useDarkMode } from "./hooks/useDarkMode";
-import { useOnlineStatus, type DeviceInfo, type LastSeen, type OnlineStatus } from "./hooks/useOnlineStatus";
+import {
+	useOnlineStatus,
+	type DeviceInfo,
+	type LastSeen,
+	type OnlineStatus,
+} from "./hooks/useOnlineStatus";
 import "./global.css";
 
 function formatDuration(ms: number): string {
@@ -18,6 +23,7 @@ function formatLastSeen(timestamp: number): string {
 	const timeStr = date.toLocaleTimeString([], {
 		hour: "2-digit",
 		minute: "2-digit",
+		hour12: false,
 	});
 	if (date.toDateString() === new Date().toDateString()) return timeStr;
 	const dateStr = date.toLocaleDateString([], {
@@ -54,7 +60,12 @@ function getDeviceItems(
 	if (deviceNames.length > 0)
 		return deviceNames.map((name) => ({ key: name, text: `/ ${name}` }));
 	if (lastSeen)
-		return [{ key: "lastSeen", text: `last seen on ${lastSeen.name} at ${formatLastSeen(lastSeen.timestamp)}` }];
+		return [
+			{
+				key: "lastSeen",
+				text: `last seen on ${lastSeen.name} at ${formatLastSeen(lastSeen.timestamp)}`,
+			},
+		];
 	return [];
 }
 
@@ -83,7 +94,9 @@ export default function App() {
 	}, [isExpanded]);
 
 	const deviceItems = getDeviceItems(deviceInfo, deviceNames, lastSeen, now);
-	const statusColor = statusColors[dark ? "dark" : "light"][status as StatusColorKey] ?? "inherit";
+	const statusColor =
+		statusColors[dark ? "dark" : "light"][status as StatusColorKey] ??
+		"inherit";
 
 	return (
 		<div className="relative flex h-full w-full items-center justify-center">
