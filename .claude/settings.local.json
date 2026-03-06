@@ -16,7 +16,9 @@
       "Bash(curl -s \"https://api.cloudflare.com/client/v4/zones?name=luuk.online\" -H \"X-Auth-Key: $APIKEY\" -H \"X-Auth-Email: $EMAIL\")",
       "Bash(curl -s \"https://api.cloudflare.com/client/v4/zones?name=luuk.online\" -H \"X-Auth-Key: 35a74da29c4ca8a49b8c10270e4fed8e741cb\" -H \"X-Auth-Email: 9285xsgjng@privaterelay.appleid.com\" -H \"Content-Type: application/json\")",
       "Bash(curl -s \"https://api.cloudflare.com/client/v4/zones/b96838caf5b2a0e91b56ff9c3eef2795/dns_records\" -H \"X-Auth-Key: 35a74da29c4ca8a49b8c10270e4fed8e741cb\" -H \"X-Auth-Email: 9285xsgjng@privaterelay.appleid.com\")",
-      "Bash(curl -sv https://luuk.online/)"
+      "Bash(curl -sv https://luuk.online/)",
+      "mcp__claude_ai_Cloudflare_Developer_Platform__workers_get_worker",
+      "mcp__claude_ai_Cloudflare_Developer_Platform__search_cloudflare_documentation"
     ]
   }
 }
