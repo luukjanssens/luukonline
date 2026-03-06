@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Unique label for this agent -->
+  <key>Label</key>
+  <string>com.luuk.laptop-online</string>
+
+  <!-- Command: node → tsx cli.mjs → laptop.ts (no shell wrapper) -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/luuk/.nvm/versions/node/v22.17.0/bin/node</string>
+    <string>/Users/luuk/Documents/projects_dc/luukonline/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs</string>
+    <string>/Users/luuk/Documents/projects_dc/luukonline/server/laptop.ts</string>
+  </array>
+
+  <!-- Keep node findable (for any child processes) -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/luuk/.nvm/versions/node/v22.17.0/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+
+  <!-- Keep alive: restart on crash, and also when stopped -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <!-- Start on login -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Log output -->
+  <key>StandardOutPath</key>
+  <string>/Users/luuk/Library/Logs/luuk-laptop-online.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/luuk/Library/Logs/luuk-laptop-online.log</string>
+
+  <!-- Throttle restarts: wait 5s before retrying -->
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+</dict>
+</plist>

@@ -7,22 +7,27 @@ const wss = new WebSocketServer({ port: Number(PORT) });
 interface Client {
 	ws: WebSocket;
 	type: "laptop" | "browser";
+	name: string;
 }
 
 const clients = new Set<Client>();
 
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
-	const isLaptop = req.url === "/laptop";
-	const isBrowser = req.url === "/status";
+	const reqUrl = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+	// Accept both /laptop (legacy) and /device (matches the Worker path)
+	const isLaptop =
+		reqUrl.pathname === "/laptop" || reqUrl.pathname === "/device";
+	const isBrowser = reqUrl.pathname === "/status";
 
 	if (!isLaptop && !isBrowser) {
 		ws.close();
 		return;
 	}
 
-	clients.add({ ws, type: isLaptop ? "laptop" : "browser" });
+	const name = reqUrl.searchParams.get("name") ?? "Unknown";
+	clients.add({ ws, type: isLaptop ? "laptop" : "browser", name });
 	console.log(
-		`[+] ${isLaptop ? "Laptop" : "Browser"} connected (${clients.size} total)`,
+		`[+] ${isLaptop ? `Laptop (${name})` : "Browser"} connected (${clients.size} total)`,
 	);
 
 	// Broadcast status to all browser clients
@@ -33,7 +38,7 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 			if (c.ws === ws) clients.delete(c);
 		});
 		console.log(
-			`[-] ${isLaptop ? "Laptop" : "Browser"} disconnected (${clients.size} total)`,
+			`[-] ${isLaptop ? `Laptop (${name})` : "Browser"} disconnected (${clients.size} total)`,
 		);
 		broadcast();
 	});
@@ -42,8 +47,13 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 });
 
 function broadcast(): void {
-	const laptopOnline = [...clients].some((c) => c.type === "laptop");
-	const payload = JSON.stringify({ online: laptopOnline, ts: Date.now() });
+	const laptops = [...clients].filter((c) => c.type === "laptop");
+	const payload = JSON.stringify({
+		online: laptops.length > 0,
+		devices: laptops.length,
+		deviceNames: laptops.map((c) => c.name),
+		ts: Date.now(),
+	});
 	clients.forEach(({ ws, type }) => {
 		if (type === "browser" && ws.readyState === WebSocket.OPEN) {
 			ws.send(payload);
@@ -52,5 +62,8 @@ function broadcast(): void {
 }
 
 console.log(`WebSocket server running on ws://localhost:${PORT}`);
-console.log(`  Laptop connects to:  ws://localhost:${PORT}/laptop`);
+console.log(
+	`  Laptop connects to:  ws://localhost:${PORT}/device?name=<hostname>`,
+);
+console.log(`  Browser connects to: ws://localhost:${PORT}/status`);
 console.log(`  Browser connects to: ws://localhost:${PORT}/status`);

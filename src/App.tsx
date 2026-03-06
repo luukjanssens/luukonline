@@ -1,43 +1,37 @@
-import type { CSSProperties } from "react";
-import { AsciiRenderer } from "./components/AsciiRenderer";
+import { useDarkMode } from "./hooks/useDarkMode";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
-import "./App.css";
+import "./global.css";
 
 export default function App() {
-	const status = useOnlineStatus();
-
+	const { status, deviceNames } = useOnlineStatus();
+	const [dark, toggleDark] = useDarkMode();
+	console.log(deviceNames);
 	const statusLabel: Record<string, string> = {
 		connecting: "checking...",
 		online: "online",
 		offline: "offline",
 	};
 
-	const statusColor: Record<string, string> = {
-		connecting: "#888888",
-		online: "#00ff88",
-		offline: "#ff3333",
-	};
-
 	return (
 		<div className="app">
-			<header className="header">
-				<span className="name">luuk janssens</span>
-				<div
-					className="status-badge"
-					style={{ "--color": statusColor[status] } as CSSProperties}
-				>
-					<span className="status-dot" />
-					<span className="status-text">{statusLabel[status]}</span>
-				</div>
-			</header>
-
-			<div className="canvas-area">
-				<AsciiRenderer online={status} />
-			</div>
-
-			<footer className="footer">
-				<span>drag to rotate · scroll to zoom</span>
-			</footer>
+			<p className="line">
+				<span className="muted">luuk is </span>
+				<span className={`status status--${status}`}>
+					<span className="dot" />
+					{statusLabel[status]}
+				</span>
+			</p>
+			{deviceNames.length > 0 ? (
+				<p className="line">
+					<span className="muted">via </span>
+					<span className="device-names">{deviceNames.join(", ")}</span>
+				</p>
+			) : (
+				"joe"
+			)}
+			<button type="button" className="theme-toggle" onClick={toggleDark}>
+				{dark ? "light" : "dark"}
+			</button>
 		</div>
 	);
 }

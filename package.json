@@ -6,21 +6,26 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"deploy": "vite build && wrangler deploy",
 		"lint": "biome check .",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"agent:install": "zsh scripts/install-agent.sh",
+		"agent:logs": "tail -f ~/Library/Logs/luuk-laptop-online.log",
+		"agent:stop": "launchctl unload ~/Library/LaunchAgents/com.luuk.laptop-online.plist",
+		"agent:start": "launchctl load ~/Library/LaunchAgents/com.luuk.laptop-online.plist"
 	},
 	"dependencies": {
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"three": "^0.183.2"
+		"react-dom": "^19.2.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",
+		"@cloudflare/workers-types": "^4.20260304.0",
 		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
-		"@types/three": "^0.183.1",
 		"@vitejs/plugin-react": "^5.1.1",
 		"typescript": "^5.9.3",
-		"vite": "^7.3.1"
+		"vite": "^7.3.1",
+		"wrangler": "^4.71.0"
 	}
 }

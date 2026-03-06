@@ -1,10 +1,14 @@
+import os from "node:os";
 import { WebSocket } from "ws";
 
-const WS_URL = process.env.WS_URL ?? "ws://localhost:8080/laptop";
+const BASE_URL =
+	process.env.WS_URL ?? "wss://luukonline.luuk-online.workers.dev/device";
+const DEVICE_NAME = process.env.DEVICE_NAME ?? os.hostname();
+const WS_URL = `${BASE_URL}?name=${encodeURIComponent(DEVICE_NAME)}`;
 const RETRY_DELAY = 5000;
 
 function connect(): void {
-	console.log(`[laptop] Connecting to ${WS_URL}...`);
+	console.log(`[laptop] Connecting as "${DEVICE_NAME}" to ${WS_URL}...`);
 	const ws = new WebSocket(WS_URL);
 
 	ws.on("open", () => {
