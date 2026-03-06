@@ -1,0 +1,29 @@
+{
+	"name": "luukonline",
+	"compatibility_date": "2026-03-06",
+	"main": "./worker/index.ts",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"routes": [
+		{
+			"pattern": "luuk.online",
+			"custom_domain": true
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "ONLINE_STATUS",
+				"class_name": "OnlineStatus"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["OnlineStatus"]
+		}
+	]
+}
