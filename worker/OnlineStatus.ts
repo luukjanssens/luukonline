@@ -48,16 +48,19 @@ export class OnlineStatus extends DurableObject {
 	}
 
 	webSocketClose(
-		ws: WebSocket,
+		socket: WebSocket,
 		_code: number,
 		_reason: string,
 		_wasClean: boolean,
 	): void {
-		const tags = this.ctx.getTags(ws);
+		const tags = this.ctx.getTags(socket);
 		if (tags[0] === "device") {
 			this.ctx.waitUntil(
 				this.ctx.storage
-					.put("lastSeen", { ts: Date.now(), name: tags[1] ?? "unknown" })
+					.put("lastSeen", {
+						timestamp: Date.now(),
+						name: tags[1] ?? "unknown",
+					})
 					.then(() => this.broadcastStatus()),
 			);
 		} else {
@@ -65,19 +68,19 @@ export class OnlineStatus extends DurableObject {
 		}
 	}
 
-	webSocketError(ws: WebSocket, _error: unknown): void {
-		this.webSocketClose(ws, 0, "", false);
+	webSocketError(socket: WebSocket, _error: unknown): void {
+		this.webSocketClose(socket, 0, "", false);
 	}
 
-	webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer): void {
+	webSocketMessage(_socket: WebSocket, _message: string | ArrayBuffer): void {
 		// devices don't send messages
 	}
 
 	private currentStatus() {
 		const devices = this.ctx.getWebSockets("device");
 		// Tags: ["device", name, connectedAt]
-		const deviceInfo = devices.map((ws) => {
-			const tags = this.ctx.getTags(ws);
+		const deviceInfo = devices.map((socket) => {
+			const tags = this.ctx.getTags(socket);
 			return {
 				name: tags[1] ?? "Unknown",
 				connectedAt: Number(tags[2] ?? "0"),
@@ -87,9 +90,9 @@ export class OnlineStatus extends DurableObject {
 		return {
 			online,
 			devices: devices.length,
-			deviceNames: deviceInfo.map((d) => d.name),
+			deviceNames: deviceInfo.map((device) => device.name),
 			deviceInfo,
-			ts: Date.now(),
+			timestamp: Date.now(),
 		};
 	}
 
@@ -103,17 +106,17 @@ export class OnlineStatus extends DurableObject {
 		return JSON.stringify({ ...status, lastSeen });
 	}
 
-	private async sendStatus(ws: WebSocket): Promise<void> {
+	private async sendStatus(socket: WebSocket): Promise<void> {
 		try {
-			ws.send(await this.buildPayload());
+			socket.send(await this.buildPayload());
 		} catch {}
 	}
 
 	private async broadcastStatus(): Promise<void> {
 		const payload = await this.buildPayload();
-		for (const ws of this.ctx.getWebSockets("browser")) {
+		for (const socket of this.ctx.getWebSockets("browser")) {
 			try {
-				ws.send(payload);
+				socket.send(payload);
 			} catch {}
 		}
 	}

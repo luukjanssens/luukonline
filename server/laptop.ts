@@ -9,20 +9,20 @@ const RETRY_DELAY = 5000;
 
 function connect(): void {
 	console.log(`[laptop] Connecting as "${DEVICE_NAME}" to ${WS_URL}...`);
-	const ws = new WebSocket(WS_URL);
+	const socket = new WebSocket(WS_URL);
 
-	ws.on("open", () => {
+	socket.on("open", () => {
 		console.log("[laptop] Connected — you are now online.");
 	});
 
-	ws.on("close", () => {
+	socket.on("close", () => {
 		console.log(`[laptop] Disconnected. Retrying in ${RETRY_DELAY / 1000}s...`);
 		setTimeout(connect, RETRY_DELAY);
 	});
 
-	ws.on("error", (err: Error) => {
+	socket.on("error", (err: Error) => {
 		console.error("[laptop] Error:", err.message);
-		ws.terminate();
+		socket.terminate();
 	});
 }
 

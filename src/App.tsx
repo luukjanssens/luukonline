@@ -13,11 +13,17 @@ function formatDuration(ms: number): string {
 	return `${sec}s`;
 }
 
-function formatLastSeen(ts: number): string {
-	const date = new Date(ts);
-	const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function formatLastSeen(timestamp: number): string {
+	const date = new Date(timestamp);
+	const timeStr = date.toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
 	if (date.toDateString() === new Date().toDateString()) return timeStr;
-	const dateStr = date.toLocaleDateString([], { month: "short", day: "numeric" });
+	const dateStr = date.toLocaleDateString([], {
+		month: "short",
+		day: "numeric",
+	});
 	return `${dateStr} at ${timeStr}`;
 }
 
@@ -64,7 +70,8 @@ export default function App() {
 						{deviceInfo.length > 0
 							? deviceInfo
 									.map(
-										(d) => `${d.name} (${formatDuration(now - d.connectedAt)})`,
+										(device) =>
+											`${device.name} (${formatDuration(now - device.connectedAt)})`,
 									)
 									.join(", ")
 							: deviceNames.join(", ")}
@@ -72,7 +79,7 @@ export default function App() {
 				)}
 				{status === "offline" && lastSeen && (
 					<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 transition-opacity duration-300 whitespace-nowrap">
-						last seen on {lastSeen.name} at {formatLastSeen(lastSeen.ts)}
+						last seen on {lastSeen.name} at {formatLastSeen(lastSeen.timestamp)}
 					</span>
 				)}
 			</p>

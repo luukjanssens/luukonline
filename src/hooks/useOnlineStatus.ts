@@ -15,7 +15,7 @@ export interface DeviceInfo {
 }
 
 export interface LastSeen {
-	ts: number;
+	timestamp: number;
 	name: string;
 }
 
@@ -31,7 +31,7 @@ export function useOnlineStatus(): OnlineStatusResult {
 	const [deviceNames, setDeviceNames] = useState<string[]>([]);
 	const [deviceInfo, setDeviceInfo] = useState<DeviceInfo[]>([]);
 	const [lastSeen, setLastSeen] = useState<LastSeen | null>(null);
-	const ws = useRef<WebSocket | null>(null);
+	const socket = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
@@ -43,15 +43,15 @@ export function useOnlineStatus(): OnlineStatusResult {
 
 		function connect() {
 			try {
-				ws.current = new WebSocket(WS_URL);
+				socket.current = new WebSocket(WS_URL);
 
-				ws.current.onopen = () => {
+				socket.current.onopen = () => {
 					console.log("[status] connected via", wsProto);
 					setStatus("connecting"); // wait for first message
 				};
 
-				ws.current.onmessage = (e: MessageEvent) => {
-					const data = JSON.parse(e.data as string) as {
+				socket.current.onmessage = (event: MessageEvent) => {
+					const data = JSON.parse(event.data as string) as {
 						online: boolean;
 						deviceNames?: string[];
 						deviceInfo?: DeviceInfo[];
@@ -64,20 +64,20 @@ export function useOnlineStatus(): OnlineStatusResult {
 					setLastSeen(data.lastSeen ?? null);
 				};
 
-				ws.current.onclose = (e) => {
+				socket.current.onclose = (event) => {
 					console.log(
 						"[status] disconnected — code:",
-						e.code,
+						event.code,
 						"reason:",
-						e.reason || "(none)",
+						event.reason || "(none)",
 					);
 					setStatus("offline");
 					reconnectTimer.current = setTimeout(connect, 3000);
 				};
 
-				ws.current.onerror = (e) => {
-					console.error("[status] websocket error", e);
-					ws.current?.close();
+				socket.current.onerror = (event) => {
+					console.error("[status] websocket error", event);
+					socket.current?.close();
 				};
 			} catch (err) {
 				console.error("[status] failed to connect:", err);
@@ -89,7 +89,7 @@ export function useOnlineStatus(): OnlineStatusResult {
 		connect();
 		return () => {
 			if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-			ws.current?.close();
+			socket.current?.close();
 		};
 	}, []);
 
