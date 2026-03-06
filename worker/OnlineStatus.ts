@@ -1,5 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
 
+function normalizeDeviceName(name: string): string {
+	const lower = name.toLowerCase();
+	if (lower.includes("iphone") || lower.includes("phone")) return "phone";
+	if (lower.includes("macbook") || lower.includes("laptop")) return "laptop";
+	return lower;
+}
+
 export class OnlineStatus extends DurableObject {
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
@@ -21,7 +28,7 @@ export class OnlineStatus extends DurableObject {
 		const tags = isDevice
 			? [
 					"device",
-					url.searchParams.get("name") ?? "Unknown",
+					normalizeDeviceName(url.searchParams.get("name") ?? "unknown"),
 					Date.now().toString(),
 				]
 			: ["browser"];
@@ -29,28 +36,37 @@ export class OnlineStatus extends DurableObject {
 
 		// Send current status immediately to new browser connections
 		if (isBrowser) {
-			serverWs.send(JSON.stringify(this.currentStatus()));
+			this.ctx.waitUntil(this.sendStatus(serverWs));
 		}
 
 		// Notify browsers when a new device connects
 		if (isDevice) {
-			this.broadcast();
+			this.ctx.waitUntil(this.broadcastStatus());
 		}
 
 		return new Response(null, { status: 101, webSocket: clientWs });
 	}
 
 	webSocketClose(
-		_ws: WebSocket,
+		ws: WebSocket,
 		_code: number,
 		_reason: string,
 		_wasClean: boolean,
 	): void {
-		this.broadcast();
+		const tags = this.ctx.getTags(ws);
+		if (tags[0] === "device") {
+			this.ctx.waitUntil(
+				this.ctx.storage
+					.put("lastSeen", { ts: Date.now(), name: tags[1] ?? "unknown" })
+					.then(() => this.broadcastStatus()),
+			);
+		} else {
+			this.ctx.waitUntil(this.broadcastStatus());
+		}
 	}
 
-	webSocketError(_ws: WebSocket, _error: unknown): void {
-		this.broadcast();
+	webSocketError(ws: WebSocket, _error: unknown): void {
+		this.webSocketClose(ws, 0, "", false);
 	}
 
 	webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer): void {
@@ -67,8 +83,9 @@ export class OnlineStatus extends DurableObject {
 				connectedAt: Number(tags[2] ?? "0"),
 			};
 		});
+		const online = devices.length > 0;
 		return {
-			online: devices.length > 0,
+			online,
 			devices: devices.length,
 			deviceNames: deviceInfo.map((d) => d.name),
 			deviceInfo,
@@ -76,10 +93,25 @@ export class OnlineStatus extends DurableObject {
 		};
 	}
 
-	private broadcast(): void {
-		const browsers = this.ctx.getWebSockets("browser");
-		const payload = JSON.stringify(this.currentStatus());
-		for (const ws of browsers) {
+	private async buildPayload(): Promise<string> {
+		const status = this.currentStatus();
+		const lastSeen = status.online
+			? null
+			: ((await this.ctx.storage.get<{ ts: number; name: string }>(
+					"lastSeen",
+				)) ?? null);
+		return JSON.stringify({ ...status, lastSeen });
+	}
+
+	private async sendStatus(ws: WebSocket): Promise<void> {
+		try {
+			ws.send(await this.buildPayload());
+		} catch {}
+	}
+
+	private async broadcastStatus(): Promise<void> {
+		const payload = await this.buildPayload();
+		for (const ws of this.ctx.getWebSockets("browser")) {
 			try {
 				ws.send(payload);
 			} catch {}

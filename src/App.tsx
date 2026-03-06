@@ -13,6 +13,14 @@ function formatDuration(ms: number): string {
 	return `${sec}s`;
 }
 
+function formatLastSeen(ts: number): string {
+	const date = new Date(ts);
+	const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	if (date.toDateString() === new Date().toDateString()) return timeStr;
+	const dateStr = date.toLocaleDateString([], { month: "short", day: "numeric" });
+	return `${dateStr} at ${timeStr}`;
+}
+
 const statusLabel: Record<string, string> = {
 	connecting: "checking...",
 	online: "online",
@@ -25,7 +33,7 @@ const statusColors = {
 };
 
 export default function App() {
-	const { status, deviceNames, deviceInfo } = useOnlineStatus();
+	const { status, deviceNames, deviceInfo, lastSeen } = useOnlineStatus();
 	const [dark, toggleDark] = useDarkMode();
 	const [now, setNow] = useState(Date.now());
 
@@ -60,6 +68,11 @@ export default function App() {
 									)
 									.join(", ")
 							: deviceNames.join(", ")}
+					</span>
+				)}
+				{status === "offline" && lastSeen && (
+					<span className="absolute left-full ml-5 opacity-0 group-hover:opacity-20 transition-opacity duration-300 whitespace-nowrap">
+						last seen on {lastSeen.name} at {formatLastSeen(lastSeen.ts)}
 					</span>
 				)}
 			</p>

@@ -14,16 +14,23 @@ export interface DeviceInfo {
 	connectedAt: number;
 }
 
+export interface LastSeen {
+	ts: number;
+	name: string;
+}
+
 export interface OnlineStatusResult {
 	status: OnlineStatus;
 	deviceNames: string[];
 	deviceInfo: DeviceInfo[];
+	lastSeen: LastSeen | null;
 }
 
 export function useOnlineStatus(): OnlineStatusResult {
 	const [status, setStatus] = useState<OnlineStatus>("connecting");
 	const [deviceNames, setDeviceNames] = useState<string[]>([]);
 	const [deviceInfo, setDeviceInfo] = useState<DeviceInfo[]>([]);
+	const [lastSeen, setLastSeen] = useState<LastSeen | null>(null);
 	const ws = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,11 +55,13 @@ export function useOnlineStatus(): OnlineStatusResult {
 						online: boolean;
 						deviceNames?: string[];
 						deviceInfo?: DeviceInfo[];
+						lastSeen?: LastSeen | null;
 					};
 					console.log("[status] received:", data);
 					setStatus(data.online ? "online" : "offline");
 					setDeviceNames(data.deviceNames ?? []);
 					setDeviceInfo(data.deviceInfo ?? []);
+					setLastSeen(data.lastSeen ?? null);
 				};
 
 				ws.current.onclose = (e) => {
@@ -84,5 +93,5 @@ export function useOnlineStatus(): OnlineStatusResult {
 		};
 	}, []);
 
-	return { status, deviceNames, deviceInfo };
+	return { status, deviceNames, deviceInfo, lastSeen };
 }
