@@ -8,6 +8,9 @@ interface ChatEnv {
 interface IncomingMessage {
 	type: string;
 	text?: string;
+	lat?: number;
+	lon?: number;
+	accuracy?: number;
 }
 
 interface TelegramUpdate {
@@ -20,6 +23,21 @@ interface TelegramUpdate {
 interface TelegramSendResult {
 	ok: boolean;
 	result?: { message_id: number };
+}
+
+interface VisitorMeta {
+	ip: string | null;
+	country: string | null;
+	city: string | null;
+	region: string | null;
+	postalCode: string | null;
+	lat: string | null;
+	lon: string | null;
+	timezone: string | null;
+	org: string | null;
+	ua: string | null;
+	lang: string | null;
+	referer: string | null;
 }
 
 function randomId(): string {
@@ -37,6 +55,24 @@ export class Chat extends DurableObject<ChatEnv> {
 
 			const { 0: client, 1: server } = new WebSocketPair();
 			const sessionId = randomId();
+
+			const cf = request.cf;
+			const meta: VisitorMeta = {
+				ip: request.headers.get("CF-Connecting-IP"),
+				country: (cf?.country as string) ?? null,
+				city: (cf?.city as string) ?? null,
+				region: (cf?.region as string) ?? null,
+				postalCode: (cf?.postalCode as string) ?? null,
+				lat: (cf?.latitude as string) ?? null,
+				lon: (cf?.longitude as string) ?? null,
+				timezone: (cf?.timezone as string) ?? null,
+				org: (cf?.asOrganization as string) ?? null,
+				ua: request.headers.get("User-Agent"),
+				lang: request.headers.get("Accept-Language"),
+				referer: request.headers.get("Referer"),
+			};
+			await this.ctx.storage.put(`meta:${sessionId}`, meta);
+
 			this.ctx.acceptWebSocket(server, ["visitor", sessionId]);
 			server.send(JSON.stringify({ type: "connected", sessionId }));
 			return new Response(null, { status: 101, webSocket: client });
@@ -57,11 +93,14 @@ export class Chat extends DurableObject<ChatEnv> {
 	}
 
 	webSocketClose(
-		_socket: WebSocket,
+		socket: WebSocket,
 		_code: number,
 		_reason: string,
 		_wasClean: boolean,
-	): void {}
+	): void {
+		const sessionId = this.ctx.getTags(socket)[1];
+		if (sessionId) this.ctx.waitUntil(this.ctx.storage.delete(`meta:${sessionId}`));
+	}
 
 	webSocketError(_socket: WebSocket, _error: unknown): void {}
 
@@ -76,6 +115,32 @@ export class Chat extends DurableObject<ChatEnv> {
 			return;
 		}
 
+		if (data.type === "location_denied") {
+			await fetch(`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					chat_id: this.env.TELEGRAM_CHAT_ID,
+					text: `🚫 [${sessionId}] Location denied`,
+				}),
+			});
+			return;
+		}
+
+		if (data.type === "location" && data.lat != null && data.lon != null) {
+			const accuracy = data.accuracy ? ` (±${Math.round(data.accuracy)}m)` : "";
+			const mapsLink = `https://maps.google.com/?q=${data.lat},${data.lon}`;
+			await fetch(`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					chat_id: this.env.TELEGRAM_CHAT_ID,
+					text: `📍 [${sessionId}] Location${accuracy}\n${mapsLink}`,
+				}),
+			});
+			return;
+		}
+
 		if (data.type !== "message" || !data.text?.trim()) return;
 
 		const text = data.text.trim().slice(0, 500);
@@ -85,6 +150,20 @@ export class Chat extends DurableObject<ChatEnv> {
 			JSON.stringify({ type: "message", from: "visitor", text, timestamp: Date.now() }),
 		);
 
+		const meta = await this.ctx.storage.get<VisitorMeta>(`meta:${sessionId}`);
+		const location = [meta?.city, meta?.postalCode, meta?.region, meta?.country].filter(Boolean).join(", ");
+		const metaLines = [
+			location && `🌍 ${location}`,
+			meta?.timezone && `🕐 ${meta.timezone}`,
+			meta?.org && `📡 ${meta.org}`,
+			meta?.ip && `🔗 ${meta.ip}`,
+			meta?.referer && `↩️ ${meta.referer}`,
+			meta?.lang && `🗣️ ${meta.lang}`,
+			meta?.ua && `🖥️ ${meta.ua}`,
+		]
+			.filter(Boolean)
+			.join("\n");
+
 		// Forward to Telegram
 		const resp = await fetch(
 			`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -93,7 +172,7 @@ export class Chat extends DurableObject<ChatEnv> {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					chat_id: this.env.TELEGRAM_CHAT_ID,
-					text: `💬 [${sessionId}]\n${text}`,
+					text: `💬 [${sessionId}]\n${text}${metaLines ? `\n\n${metaLines}` : ""}`,
 				}),
 			},
 		);
@@ -120,6 +199,11 @@ export class Chat extends DurableObject<ChatEnv> {
 			.getWebSockets("visitor")
 			.find((s) => this.ctx.getTags(s)[1] === sessionId);
 		if (!socket) return;
+
+		if (msg.text === "/location") {
+			socket.send(JSON.stringify({ type: "location_request" }));
+			return;
+		}
 
 		socket.send(
 			JSON.stringify({

@@ -54,6 +54,35 @@ export function useChat(): UseChatResult {
 						},
 					]);
 				}
+
+				if (data.type === "location_request") {
+					navigator.geolocation?.getCurrentPosition(
+						(pos) => {
+							if (ws.readyState === WebSocket.OPEN) {
+								ws.send(JSON.stringify({
+									type: "location",
+									lat: pos.coords.latitude,
+									lon: pos.coords.longitude,
+									accuracy: pos.coords.accuracy,
+								}));
+								setMessages((prev) => [
+									...prev,
+									{
+										id: `${Date.now()}-location`,
+										from: "visitor" as const,
+										text: "📍 location shared",
+										timestamp: Date.now(),
+									},
+								]);
+							}
+						},
+						() => {
+							if (ws.readyState === WebSocket.OPEN) {
+								ws.send(JSON.stringify({ type: "location_denied" }));
+							}
+						},
+					);
+				}
 			};
 
 			ws.onclose = () => {
@@ -73,7 +102,10 @@ export function useChat(): UseChatResult {
 	}, []);
 
 	const send = useCallback((text: string) => {
-		socketRef.current?.send(JSON.stringify({ type: "message", text }));
+		const ws = socketRef.current;
+		if (ws?.readyState === WebSocket.OPEN) {
+			ws.send(JSON.stringify({ type: "message", text }));
+		}
 	}, []);
 
 	return { messages, connected, send };
