@@ -100,7 +100,7 @@ export class OnlineStatus extends DurableObject {
 		const status = this.currentStatus();
 		const lastSeen = status.online
 			? null
-			: ((await this.ctx.storage.get<{ ts: number; name: string }>(
+			: ((await this.ctx.storage.get<{ timestamp: number; name: string }>(
 					"lastSeen",
 				)) ?? null);
 		return JSON.stringify({ ...status, lastSeen });
