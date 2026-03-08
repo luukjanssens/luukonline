@@ -52,11 +52,16 @@ function getDeviceItems(
 	lastSeen: LastSeen | null,
 	now: number,
 ) {
-	if (deviceInfo.length > 0)
-		return deviceInfo.map((d) => ({
-			key: d.name,
-			text: `/ ${d.name} (${formatDuration(now - d.connectedAt)})`,
+	if (deviceInfo.length > 0) {
+		const seen = new Set<string>();
+		const deduped = [...deviceInfo]
+			.sort((a, b) => a.connectedAt - b.connectedAt)
+			.filter((device) => !seen.has(device.name) && seen.add(device.name));
+		return deduped.map((device) => ({
+			key: device.name,
+			text: `/ ${device.name} (${formatDuration(now - device.connectedAt)})`,
 		}));
+	}
 	if (deviceNames.length > 0)
 		return deviceNames.map((name) => ({ key: name, text: `/ ${name}` }));
 	if (lastSeen)
