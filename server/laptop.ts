@@ -12,11 +12,14 @@ const RETRY_DELAY = 5000;
 const PING_INTERVAL = 30_000;
 const PONG_TIMEOUT = 10_000;
 
+let activeSocket: WebSocket | null = null;
+
 function connect(): void {
 	console.log(
 		`${timestamp()} [laptop] Connecting as "${DEVICE_NAME}" to ${WS_URL}...`,
 	);
 	const socket = new WebSocket(WS_URL);
+	activeSocket = socket;
 	let pingTimer: ReturnType<typeof setInterval> | null = null;
 	let pongTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -46,6 +49,7 @@ function connect(): void {
 
 	socket.on("close", () => {
 		stopTimers();
+		activeSocket = null;
 		console.log(
 			`${timestamp()} [laptop] Disconnected. Retrying in ${RETRY_DELAY / 1000}s...`,
 		);
@@ -57,5 +61,13 @@ function connect(): void {
 		socket.terminate();
 	});
 }
+
+process.on("SIGTERM", () => {
+	console.log(`${timestamp()} [laptop] SIGTERM received — closing connection.`);
+	if (activeSocket && activeSocket.readyState === WebSocket.OPEN) {
+		activeSocket.close(1001, "Going away");
+	}
+	process.exit(0);
+});
 
 connect();
