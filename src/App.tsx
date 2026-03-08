@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Chat from "./Chat";
 import { useDarkMode } from "./hooks/useDarkMode";
 import {
 	useOnlineStatus,
@@ -139,6 +140,7 @@ export default function App() {
 					)}
 				</button>
 			</p>
+			<Chat dark={dark} />
 			<button
 				type="button"
 				className="absolute right-7 bottom-6 cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-xs tracking-widest lowercase text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
