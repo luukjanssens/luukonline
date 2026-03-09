@@ -59,12 +59,14 @@ export function useChat(): UseChatResult {
 					navigator.geolocation?.getCurrentPosition(
 						(pos) => {
 							if (ws.readyState === WebSocket.OPEN) {
-								ws.send(JSON.stringify({
-									type: "location",
-									lat: pos.coords.latitude,
-									lon: pos.coords.longitude,
-									accuracy: pos.coords.accuracy,
-								}));
+								ws.send(
+									JSON.stringify({
+										type: "location",
+										lat: pos.coords.latitude,
+										lon: pos.coords.longitude,
+										accuracy: pos.coords.accuracy,
+									}),
+								);
 								setMessages((prev) => [
 									...prev,
 									{
