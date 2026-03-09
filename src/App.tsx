@@ -22,17 +22,17 @@ function formatDuration(ms: number): string {
 
 function formatLastSeen(timestamp: number): string {
 	const date = new Date(timestamp);
-	const timeStr = date.toLocaleTimeString([], {
+	const timeString = date.toLocaleTimeString([], {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
 	});
-	if (date.toDateString() === new Date().toDateString()) return timeStr;
-	const dateStr = date.toLocaleDateString([], {
+	if (date.toDateString() === new Date().toDateString()) return timeString;
+	const dateString = date.toLocaleDateString([], {
 		month: "short",
 		day: "numeric",
 	});
-	return `${dateStr} at ${timeStr}`;
+	return `${dateString} at ${timeString}`;
 }
 
 const statusLabel: Record<OnlineStatus, string> = {

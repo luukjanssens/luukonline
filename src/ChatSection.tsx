@@ -19,20 +19,34 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 	const isLuuk = message.from === "luuk";
 	const time = formatTime(message.timestamp);
 
+	// Tail geometry: M 0,-H L ±W,0 L 0,H
+	// SVG is a 0×0 element anchored at the bubble's bottom corner (overflow:visible)
+	// so SVG (0,0) == the bubble's BL or BR corner exactly.
+	const H = 5;
+	const W = 8;
+
 	return (
 		<li
 			className={`flex flex-col list-none ${isLuuk ? "items-start" : "items-end"}`}
 		>
-			<p
-				className={`max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 rounded-2xl ${
-					isLuuk
-						? "border-current/20 opacity-60"
-						: "border-current/10 opacity-90"
-				}`}
-			>
-				{isLuuk && <span className="opacity-50">luuk: </span>}
-				{message.text}
-			</p>
+			<div className="relative max-w-[60%]">
+				<p
+					className={`text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 ${
+						isLuuk
+							? "border-current/20 opacity-60"
+							: "border-current/10 opacity-90"
+					}`}
+					style={{
+						borderRadius: "1rem",
+						...(isLuuk
+							? { borderBottomLeftRadius: 0 }
+							: { borderBottomRightRadius: 0 }),
+					}}
+				>
+					{isLuuk && <span className="opacity-50">luuk: </span>}
+					{message.text}
+				</p>
+			</div>
 			<span className="text-[10px] tracking-wide lowercase opacity-30 mt-0.5 px-1">
 				{isLuuk
 					? `received${time ? ` · ${time}` : ""}`
@@ -228,7 +242,8 @@ export function ChatSection({ dark }: { dark: boolean }) {
 							>
 								<label
 									ref={labelRef}
-									className="max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 rounded-2xl px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="relative max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">
 										<span

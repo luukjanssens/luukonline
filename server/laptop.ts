@@ -3,8 +3,17 @@ import os from "node:os";
 import { WebSocket } from "ws";
 
 function notify(title: string, message: string): void {
+	const now = new Date();
+	const dateString = now.toLocaleDateString("en-CA"); // YYYY-MM-DD
+	const timeString = now.toLocaleTimeString("en-GB", {
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hour12: false,
+	});
+	const timestamp = `${dateString} ${timeString}`;
 	exec(
-		`osascript -e 'display notification "${message}" with title "${title}"'`,
+		`osascript -e 'display notification "${message} — ${timestamp}" with title "${title}"'`,
 		() => {},
 	);
 }
@@ -59,7 +68,7 @@ function connect(): void {
 	socket.on("close", () => {
 		stopTimers();
 		activeSocket = null;
-		notify("luuk.online status:Ì", "Offline");
+		notify("luuk.online status:", "Offline");
 		console.log(
 			`${timestamp()} [laptop] Disconnected. Retrying in ${RETRY_DELAY / 1000}s...`,
 		);
