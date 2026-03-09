@@ -7,12 +7,12 @@ import {
 } from "react";
 import { type ChatMessage, useChat } from "./hooks/useChat";
 
-function formatTime(ts: number): string {
-	if (!ts) return "";
-	const d = new Date(ts);
-	const h = d.getHours().toString().padStart(2, "0");
-	const m = d.getMinutes().toString().padStart(2, "0");
-	return `${h}:${m}`;
+function formatTime(timestamp: number): string {
+	if (!timestamp) return "";
+	const date = new Date(timestamp);
+	const hours = date.getHours().toString().padStart(2, "0");
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	return `${hours}:${minutes}`;
 }
 
 function Bubble({ msg: message }: { msg: ChatMessage }) {
