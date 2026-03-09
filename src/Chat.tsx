@@ -1,117 +1,284 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { type ChatMessage, useChat } from "./hooks/useChat";
 
-interface ChatProps {
-	dark: boolean;
+function formatTime(timestamp: number): string {
+	if (!timestamp) return "";
+	const date = new Date(timestamp);
+	const hours = date.getHours().toString().padStart(2, "0");
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	return `${hours}:${minutes}`;
 }
 
-function Message({ msg }: { msg: ChatMessage }) {
-	const isVisitor = msg.from === "visitor";
+function Bubble({ msg: message }: { msg: ChatMessage }) {
+	const isLuuk = message.from === "luuk";
+	const time = formatTime(message.timestamp);
+
 	return (
-		<div className={`flex ${isVisitor ? "justify-end" : "justify-start"}`}>
-			<span
-				className={`max-w-[85%] text-xs tracking-wide lowercase leading-relaxed ${
-					isVisitor ? "opacity-60" : "opacity-90"
-				}`}
-			>
-				{!isVisitor && <span className="opacity-50">luuk: </span>}
-				{msg.text}
+		<li
+			className={`flex flex-col list-none ${isLuuk ? "items-start" : "items-end"}`}
+		>
+			<div className="relative max-w-[60%]">
+				<p
+					className={`text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 ${
+						isLuuk
+							? "border-current/20 opacity-60"
+							: "border-current/10 opacity-90"
+					}`}
+					style={{
+						borderRadius: "1rem",
+						...(isLuuk
+							? { borderBottomLeftRadius: 0 }
+							: { borderBottomRightRadius: 0 }),
+					}}
+				>
+					{isLuuk && <span className="opacity-50">luuk: </span>}
+					{message.text}
+				</p>
+			</div>
+			<span className="text-[10px] tracking-wide lowercase opacity-30 mt-0.5 px-1">
+				{isLuuk
+					? `received${time ? ` · ${time}` : ""}`
+					: `sent${time ? ` · ${time}` : ""}`}
 			</span>
-		</div>
+		</li>
 	);
 }
 
-export default function Chat({ dark }: ChatProps) {
-	const [open, setOpen] = useState(false);
-	const [input, setInput] = useState("");
+export function Chat({ dark }: { dark: boolean }) {
 	const { messages, connected, send } = useChat();
-	const bottomRef = useRef<HTMLDivElement>(null);
-	const inputRef = useRef<HTMLInputElement>(null);
+	const [input, setInput] = useState("");
+	const [hasSentMessage, setHasSentMessage] = useState(false);
+	const [inputHidden, setInputHidden] = useState(false);
+	const [inputEntering, setInputEntering] = useState(false);
+	const [inputFocused, setInputFocused] = useState(false);
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLTextAreaElement>(null);
+	const labelRef = useRef<HTMLLabelElement>(null);
+	const pendingFlipLeft = useRef<number | null>(null);
+	// Two-step animation guards: both must be true before the new input reveals
+	const flipDoneRef = useRef(true);
+	const msgDoneRef = useRef(true);
+	const waitingForConfirmation = useRef(false);
+	const prevDisplayLenRef = useRef(0);
+	const background = dark ? "#0a0a0a" : "#f7f7f5";
 
-	const bg = dark ? "#0a0a0a" : "#f7f7f5";
+	// const display = messages.length > 0 ? messages : demo;
+	const display = messages;
+
+	const msgCount = display.length;
+	const hasMessages = msgCount > 0;
+	const sectionHeight = `min(calc(${280 + msgCount * 52}px), calc(100dvh - 56px))`;
 
 	useEffect(() => {
-		if (!open) return;
-		setTimeout(() => inputRef.current?.focus(), 50);
-	}, [open]);
+		inputRef.current?.focus();
+	}, []);
 
+	useLayoutEffect(() => {
+		const element = scrollRef.current;
+		if (!element) return;
+		element.scrollTop = element.scrollHeight;
+	});
+
+	useLayoutEffect(() => {
+		if (
+			!hasSentMessage ||
+			pendingFlipLeft.current === null ||
+			!labelRef.current
+		)
+			return;
+
+		const firstLeft = pendingFlipLeft.current;
+		pendingFlipLeft.current = null;
+
+		const lastLeft = labelRef.current.getBoundingClientRect().left;
+		const offset = firstLeft - lastLeft;
+
+		if (Math.abs(offset) < 1) return;
+
+		const el = labelRef.current;
+		el.style.transition = "none";
+		el.style.transform = `translateX(${offset}px)`;
+
+		// Force a synchronous reflow so the browser registers the start state
+		// before we enable the transition.
+		void el.offsetWidth;
+
+		el.style.transition = "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
+		el.style.transform = "translateX(0)";
+		// Intentionally leave transform: translateX(0) in place after the animation.
+		// Clearing it would cause the browser to de-promote the element from the GPU
+		// compositor layer, producing a visible repaint flash.
+	}, [hasSentMessage]);
+
+	// Reveal the input bubble once BOTH the slide animation AND the message
+	// confirmation have completed.
+	const maybeReveal = useCallback(() => {
+		if (!flipDoneRef.current || !msgDoneRef.current) return;
+		waitingForConfirmation.current = false;
+		setInputHidden(false);
+		setInputEntering(true);
+	}, []);
+
+	// Step 2 gate: fires when a new message lands in the conversation.
 	useEffect(() => {
-		if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [open, messages.length]);
+		if (!waitingForConfirmation.current) return;
+		if (display.length <= prevDisplayLenRef.current) return;
+		prevDisplayLenRef.current = display.length;
+		msgDoneRef.current = true;
+		maybeReveal();
+	}, [display.length, maybeReveal]);
 
-	function handleSubmit(e: FormEvent) {
-		e.preventDefault();
-		const text = input.trim();
-		if (!text || !connected) return;
-		send(text);
+	function sendMessage(text: string) {
+		if (!text.trim() || !connected) return;
+		const isFirst = !hasSentMessage;
+
+		// Reset two-step gates.
+		flipDoneRef.current = false;
+		msgDoneRef.current = false;
+		waitingForConfirmation.current = true;
+
+		if (isFirst) {
+			pendingFlipLeft.current =
+				labelRef.current?.getBoundingClientRect().left ?? null;
+			setHasSentMessage(true);
+		}
+
+		send(text.trim());
 		setInput("");
+		inputRef.current?.focus();
+
+		// Step 1 ends: collapse the input after the slide finishes.
+		// For the first send we wait for the FLIP (≈550 ms); subsequent sends
+		// collapse quickly since the bubble is already on the right.
+		const collapseDelay = isFirst ? 570 : 40;
+		setTimeout(() => {
+			setInputHidden(true);
+			// Allow the collapse transition to complete, then open step-2 gate.
+			setTimeout(() => {
+				flipDoneRef.current = true;
+				maybeReveal();
+			}, 200);
+		}, collapseDelay);
 	}
 
 	return (
-		<>
-			{open && (
-				<div
-					className="absolute bottom-14 left-7 w-72 flex flex-col border border-current/10"
-					style={{ background: bg }}
-				>
-					{/* header */}
-					<div className="flex items-center justify-between px-4 py-2 border-b border-current/10">
-						<span className="text-xs tracking-widest lowercase opacity-40">
-							chat with luuk
-						</span>
-						<button
-							type="button"
-							onClick={() => setOpen(false)}
-							className="opacity-30 hover:opacity-60 transition-opacity text-xs cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-inherit"
-						>
-							✕
-						</button>
-					</div>
-
-					{/* messages */}
-					<div className="h-44 overflow-y-auto flex flex-col gap-2.5 p-4">
-						{messages.length === 0 && (
-							<span className="text-xs tracking-wide lowercase opacity-25">
-								say something…
-							</span>
-						)}
-						{messages.map((m) => (
-							<Message key={m.id} msg={m} />
-						))}
-						<div ref={bottomRef} />
-					</div>
-
-					{/* input */}
-					<form
-						onSubmit={handleSubmit}
-						className="flex border-t border-current/10"
-					>
-						<input
-							ref={inputRef}
-							value={input}
-							onChange={(e) => setInput(e.target.value)}
-							placeholder={connected ? "type something…" : "connecting…"}
-							disabled={!connected}
-							className="flex-1 bg-transparent px-4 py-2 text-xs tracking-wide lowercase outline-none placeholder:opacity-25 disabled:opacity-30 font-[inherit] text-inherit"
-						/>
-						<button
-							type="submit"
-							disabled={!connected || !input.trim()}
-							className="px-3 py-2 text-xs opacity-30 hover:opacity-60 disabled:opacity-15 transition-opacity lowercase tracking-widest cursor-pointer bg-transparent border-0 font-[inherit] text-inherit"
-						>
-							send
-						</button>
-					</form>
-				</div>
-			)}
-
-			<button
-				type="button"
-				onClick={() => setOpen((p) => !p)}
-				className="absolute left-7 bottom-6 cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-xs tracking-widest lowercase text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
+		<section
+			className="flex flex-col overflow-hidden"
+			style={{
+				background,
+				height: sectionHeight,
+				transition: "height 0.35s ease",
+			}}
+		>
+			<div
+				className="flex-1 overflow-hidden flex justify-center"
+				style={
+					hasMessages
+						? {
+								maskImage:
+									"linear-gradient(to bottom, transparent, black 8%, black 88%, transparent)",
+							}
+						: undefined
+				}
 			>
-				{open ? "close" : "say hello"}
-			</button>
-		</>
+				<div
+					ref={scrollRef}
+					className="w-full md:w-[60dvw] max-w-3xl overflow-y-auto "
+					style={{ scrollbarWidth: "none" }}
+				>
+					<ul
+						role="log"
+						aria-label="chat messages"
+						className={`flex flex-col gap-2 px-5 ${hasMessages ? "py-8" : "py-4"}`}
+					>
+						{display.map((message) => (
+							<Bubble key={message.id} msg={message} />
+						))}
+
+						{/* input bubble — inline with message flow */}
+						<li
+							style={
+								inputHidden
+									? {
+											maxHeight: 0,
+											opacity: 0,
+											overflow: "hidden",
+											transition: "max-height 0.2s ease, opacity 0.15s ease",
+											pointerEvents: "none",
+										}
+									: inputEntering
+										? {
+												maxHeight: "10rem",
+												overflow: "visible",
+												transition: "max-height 0.35s ease",
+												animation:
+													"slide-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+											}
+										: {
+												maxHeight: "10rem",
+												opacity: 1,
+												overflow: "visible",
+											}
+							}
+							onAnimationEnd={() => {
+								setInputEntering(false);
+								inputRef.current?.focus();
+							}}
+						>
+							<div
+								className={`flex ${hasSentMessage ? "justify-end" : "justify-center"}`}
+							>
+								<label
+									ref={labelRef}
+									className="relative max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
+								>
+									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">
+										<span
+											className="invisible whitespace-pre-wrap wrap-break-word col-start-1 row-start-1 pointer-events-none"
+											aria-hidden
+										>
+											{`${input}\u200b`}
+										</span>
+										<textarea
+											ref={inputRef}
+											value={input}
+											onChange={(events) => setInput(events.target.value)}
+											onFocus={() => setInputFocused(true)}
+											onBlur={() => setInputFocused(false)}
+											onKeyDown={(events) => {
+												if (events.key === "Enter" && !events.shiftKey) {
+													events.preventDefault();
+													sendMessage(input);
+												}
+											}}
+											className="bg-transparent outline-none font-[inherit] text-inherit resize-none col-start-1 row-start-1 overflow-hidden w-full"
+										/>
+										{inputFocused && (
+											<span
+												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word"
+												aria-hidden
+											>
+												<span className="invisible">{input}</span>
+												<span
+													className="inline-block w-[0.55em] h-[1em]
+												rounded-xs bg-current align-text-bottom animate-blink-block"
+												/>
+											</span>
+										)}
+									</div>
+								</label>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
 	);
 }

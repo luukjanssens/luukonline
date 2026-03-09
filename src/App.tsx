@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import Chat from "./Chat";
 import { useDarkMode } from "./hooks/useDarkMode";
 import {
 	useOnlineStatus,
@@ -8,7 +7,7 @@ import {
 	type OnlineStatus,
 } from "./hooks/useOnlineStatus";
 import "./global.css";
-import { ChatSection } from "./ChatSection";
+import { Chat } from "./Chat";
 
 function formatDuration(ms: number): string {
 	const s = Math.floor(ms / 1000);
@@ -107,7 +106,7 @@ export default function App() {
 
 	return (
 		<div className="h-dvh flex flex-col">
-			<ChatSection dark={dark} />
+			<Chat dark={dark} />
 			<div className="flex w-full items-center justify-center">
 				<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
 					<button
