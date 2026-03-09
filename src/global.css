@@ -14,9 +14,37 @@
 			opacity: 0.35;
 		}
 	}
+
+	@keyframes slide-in-up {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	--animate-blink-block: blink-block 1s step-start infinite;
+
+	@keyframes blink-block {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0;
+		}
+	}
 }
 
 @layer base {
+	textarea,
+	input {
+		caret-color: transparent;
+	}
+
 	html,
 	body,
 	#root {
