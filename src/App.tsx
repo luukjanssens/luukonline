@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Chat from "./Chat";
 import { useDarkMode } from "./hooks/useDarkMode";
 import {
 	useOnlineStatus,
@@ -7,6 +8,7 @@ import {
 	type OnlineStatus,
 } from "./hooks/useOnlineStatus";
 import "./global.css";
+import { ChatSection } from "./ChatSection";
 
 function formatDuration(ms: number): string {
 	const s = Math.floor(ms / 1000);
@@ -104,48 +106,52 @@ export default function App() {
 		"inherit";
 
 	return (
-		<div className="relative flex h-full w-full items-center justify-center">
-			<p className="relative text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
+		<div className="h-dvh flex flex-col">
+			<ChatSection dark={dark} />
+			<div className="flex w-full items-center justify-center">
+				<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
+					<button
+						type="button"
+						ref={groupRef}
+						className="relative hover:cursor-default group flex gap-2 touch-manipulation border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
+						data-expanded={isExpanded ? "" : undefined}
+						onTouchStart={() => setIsExpanded((p) => !p)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") setIsExpanded((p) => !p);
+						}}
+					>
+						<span className="opacity-50">luuk is</span>
+						<span
+							className="inline-flex items-center gap-2 transition-colors duration-600"
+							style={{ color: statusColor }}
+						>
+							<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
+							{statusLabel[status]}
+						</span>
+						{deviceItems.length > 0 && (
+							<span className="absolute left-full ml-5 flex flex-col">
+								{deviceItems.map((item, i) => (
+									<span
+										key={item.key}
+										className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 group-data-expanded:opacity-20 group-data-expanded:translate-x-0 transition duration-300"
+										style={{ transitionDelay: `${i * 60}ms` }}
+									>
+										{item.text}
+									</span>
+								))}
+							</span>
+						)}
+					</button>
+				</p>
+				{/* <Chat dark={dark} /> */}
 				<button
 					type="button"
-					ref={groupRef}
-					className="hover:cursor-default group flex gap-2 touch-manipulation border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
-					data-expanded={isExpanded ? "" : undefined}
-					onClick={() => setIsExpanded((p) => !p)}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") setIsExpanded((p) => !p);
-					}}
+					className="absolute right-7 bottom-6 cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-xs tracking-widest lowercase text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
+					onClick={toggleDark}
 				>
-					<span className="opacity-50">luuk is</span>
-					<span
-						className="inline-flex items-center gap-2 transition-colors duration-600"
-						style={{ color: statusColor }}
-					>
-						<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
-						{statusLabel[status]}
-					</span>
-					{deviceItems.length > 0 && (
-						<span className="absolute left-full ml-5 flex flex-col">
-							{deviceItems.map((item, i) => (
-								<span
-									key={item.key}
-									className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 group-data-expanded:opacity-20 group-data-expanded:translate-x-0 transition duration-300"
-									style={{ transitionDelay: `${i * 60}ms` }}
-								>
-									{item.text}
-								</span>
-							))}
-						</span>
-					)}
+					{dark ? "light" : "dark"}
 				</button>
-			</p>
-			<button
-				type="button"
-				className="absolute right-7 bottom-6 cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-xs tracking-widest lowercase text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
-				onClick={toggleDark}
-			>
-				{dark ? "light" : "dark"}
-			</button>
+			</div>
 		</div>
 	);
 }

@@ -1,5 +1,13 @@
+import { exec } from "node:child_process";
 import os from "node:os";
 import { WebSocket } from "ws";
+
+function notify(title: string, message: string): void {
+	exec(
+		`osascript -e 'display notification "${message}" with title "${title}"'`,
+		() => {},
+	);
+}
 
 function timestamp(): string {
 	return new Date().toISOString();
@@ -32,6 +40,7 @@ function connect(): void {
 
 	socket.on("open", () => {
 		console.log(`${timestamp()} [laptop] Connected — you are now online.`);
+		notify("luuk.online status:", "Online");
 		pingTimer = setInterval(() => {
 			if (socket.readyState !== WebSocket.OPEN) return;
 			socket.ping();
@@ -50,6 +59,7 @@ function connect(): void {
 	socket.on("close", () => {
 		stopTimers();
 		activeSocket = null;
+		notify("luuk.online status:Ì", "Offline");
 		console.log(
 			`${timestamp()} [laptop] Disconnected. Retrying in ${RETRY_DELAY / 1000}s...`,
 		);
