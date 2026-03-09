@@ -105,9 +105,8 @@ export default function App() {
 		"inherit";
 
 	return (
-		<div className="h-dvh flex flex-col">
-			<Chat dark={dark} />
-			<div className="flex w-full items-center justify-center">
+		<div className="h-dvh flex flex-col items-center justify-center gap-6">
+			<div className="flex w-full items-center justify-center pt-10">
 				<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
 					<button
 						type="button"
@@ -128,11 +127,11 @@ export default function App() {
 							{statusLabel[status]}
 						</span>
 						{deviceItems.length > 0 && (
-							<span className="absolute left-full ml-5 flex flex-col">
+							<span className="absolute top-full left-0 mt-1 flex flex-col md:top-0 md:left-full md:ml-5 md:mt-0">
 								{deviceItems.map((item, i) => (
 									<span
 										key={item.key}
-										className="whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-20 group-hover:translate-x-0 group-data-expanded:opacity-20 group-data-expanded:translate-x-0 transition duration-300"
+										className="whitespace-nowrap opacity-0 translate-y-1 md:translate-y-0 md:-translate-x-1 group-hover:opacity-20 group-hover:translate-y-0 group-hover:translate-x-0 group-data-expanded:opacity-20 group-data-expanded:translate-y-0 group-data-expanded:translate-x-0 transition duration-300"
 										style={{ transitionDelay: `${i * 60}ms` }}
 									>
 										{item.text}
@@ -151,6 +150,7 @@ export default function App() {
 					{dark ? "light" : "dark"}
 				</button>
 			</div>
+			<Chat />
 		</div>
 	);
 }

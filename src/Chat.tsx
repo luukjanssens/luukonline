@@ -23,7 +23,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 		<li
 			className={`flex flex-col list-none ${isLuuk ? "items-start" : "items-end"}`}
 		>
-			<div className="relative max-w-[60%]">
+			<div className="relative max-w-[80%] md:max-w-[60%]">
 				<p
 					className={`text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 ${
 						isLuuk
@@ -50,7 +50,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 	);
 }
 
-export function Chat({ dark }: { dark: boolean }) {
+export function Chat() {
 	const { messages, connected, send } = useChat();
 	const [input, setInput] = useState("");
 	const [hasSentMessage, setHasSentMessage] = useState(false);
@@ -66,14 +66,11 @@ export function Chat({ dark }: { dark: boolean }) {
 	const msgDoneRef = useRef(true);
 	const waitingForConfirmation = useRef(false);
 	const prevDisplayLenRef = useRef(0);
-	const background = dark ? "#0a0a0a" : "#f7f7f5";
 
-	// const display = messages.length > 0 ? messages : demo;
 	const display = messages;
-
-	const msgCount = display.length;
-	const hasMessages = msgCount > 0;
-	const sectionHeight = `min(calc(${280 + msgCount * 52}px), calc(100dvh - 56px))`;
+	const messageCount = display.length;
+	const hasMessages = messageCount > 0;
+	const sectionHeight = `min(calc(${280 + messageCount * 52}px), calc(100dvh - 56px))`;
 
 	useEffect(() => {
 		inputRef.current?.focus();
@@ -101,16 +98,17 @@ export function Chat({ dark }: { dark: boolean }) {
 
 		if (Math.abs(offset) < 1) return;
 
-		const el = labelRef.current;
-		el.style.transition = "none";
-		el.style.transform = `translateX(${offset}px)`;
+		const labelElement = labelRef.current;
+		labelElement.style.transition = "none";
+		labelElement.style.transform = `translateX(${offset}px)`;
 
 		// Force a synchronous reflow so the browser registers the start state
 		// before we enable the transition.
-		void el.offsetWidth;
+		void labelElement.offsetWidth;
 
-		el.style.transition = "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
-		el.style.transform = "translateX(0)";
+		labelElement.style.transition =
+			"transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
+		labelElement.style.transform = "translateX(0)";
 		// Intentionally leave transform: translateX(0) in place after the animation.
 		// Clearing it would cause the browser to de-promote the element from the GPU
 		// compositor layer, producing a visible repaint flash.
@@ -171,7 +169,6 @@ export function Chat({ dark }: { dark: boolean }) {
 		<section
 			className="flex flex-col overflow-hidden"
 			style={{
-				background,
 				height: sectionHeight,
 				transition: "height 0.35s ease",
 			}}
@@ -236,7 +233,7 @@ export function Chat({ dark }: { dark: boolean }) {
 							>
 								<label
 									ref={labelRef}
-									className="relative max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">
@@ -268,7 +265,7 @@ export function Chat({ dark }: { dark: boolean }) {
 												<span className="invisible">{input}</span>
 												<span
 													className="inline-block w-[0.55em] h-[1em]
-												rounded-xs bg-current align-text-bottom animate-blink-block"
+												rounded-xs bg-current align-text-bottom animate-blink-block mb-0.5"
 												/>
 											</span>
 										)}
