@@ -40,10 +40,6 @@ interface VisitorMeta {
 	referer: string | null;
 }
 
-function randomId(): string {
-	return Math.random().toString(36).slice(2, 10);
-}
-
 export class Chat extends DurableObject<ChatEnv> {
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
@@ -54,7 +50,7 @@ export class Chat extends DurableObject<ChatEnv> {
 			}
 
 			const { 0: client, 1: server } = new WebSocketPair();
-			const sessionId = randomId();
+			const sessionId = crypto.randomUUID();
 
 			const cf = request.cf;
 			const meta: VisitorMeta = {
@@ -99,7 +95,8 @@ export class Chat extends DurableObject<ChatEnv> {
 		_wasClean: boolean,
 	): void {
 		const sessionId = this.ctx.getTags(socket)[1];
-		if (sessionId) this.ctx.waitUntil(this.ctx.storage.delete(`meta:${sessionId}`));
+		if (sessionId)
+			this.ctx.waitUntil(this.ctx.storage.delete(`meta:${sessionId}`));
 	}
 
 	webSocketError(_socket: WebSocket, _error: unknown): void {}
@@ -116,28 +113,34 @@ export class Chat extends DurableObject<ChatEnv> {
 		}
 
 		if (data.type === "location_denied") {
-			await fetch(`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: this.env.TELEGRAM_CHAT_ID,
-					text: `🚫 [${sessionId}] Location denied`,
-				}),
-			});
+			await fetch(
+				`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						chat_id: this.env.TELEGRAM_CHAT_ID,
+						text: `🚫 [${sessionId}] Location denied`,
+					}),
+				},
+			);
 			return;
 		}
 
 		if (data.type === "location" && data.lat != null && data.lon != null) {
 			const accuracy = data.accuracy ? ` (±${Math.round(data.accuracy)}m)` : "";
 			const mapsLink = `https://maps.google.com/?q=${data.lat},${data.lon}`;
-			await fetch(`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: this.env.TELEGRAM_CHAT_ID,
-					text: `📍 [${sessionId}] Location${accuracy}\n${mapsLink}`,
-				}),
-			});
+			await fetch(
+				`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						chat_id: this.env.TELEGRAM_CHAT_ID,
+						text: `📍 [${sessionId}] Location${accuracy}\n${mapsLink}`,
+					}),
+				},
+			);
 			return;
 		}
 
@@ -147,11 +150,18 @@ export class Chat extends DurableObject<ChatEnv> {
 
 		// Echo back to visitor immediately
 		socket.send(
-			JSON.stringify({ type: "message", from: "visitor", text, timestamp: Date.now() }),
+			JSON.stringify({
+				type: "message",
+				from: "visitor",
+				text,
+				timestamp: Date.now(),
+			}),
 		);
 
 		const meta = await this.ctx.storage.get<VisitorMeta>(`meta:${sessionId}`);
-		const location = [meta?.city, meta?.postalCode, meta?.region, meta?.country].filter(Boolean).join(", ");
+		const location = [meta?.city, meta?.postalCode, meta?.region, meta?.country]
+			.filter(Boolean)
+			.join(", ");
 		const metaLines = [
 			location && `🌍 ${location}`,
 			meta?.timezone && `🕐 ${meta.timezone}`,

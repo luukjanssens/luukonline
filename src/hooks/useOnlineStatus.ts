@@ -1,11 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-// Derive WS URL from the current page host so it works both locally and in
-// production without baking a hardcoded URL into the bundle.
-// Override with VITE_WS_URL only when explicitly needed (e.g. a tunnel URL).
-const WS_URL =
-	import.meta.env.VITE_WS_URL ||
-	`${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/status`;
+import { getWsUrl } from "../utils/ws";
 
 export type OnlineStatus = "connecting" | "online" | "offline";
 
@@ -35,18 +29,13 @@ export function useOnlineStatus(): OnlineStatusResult {
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
-		const wsProto = WS_URL.startsWith("wss:")
-			? "WSS (secure)"
-			: "WS (insecure)";
-		console.log("[status] connecting as:", navigator.userAgent);
-		console.log("[status] connection method:", wsProto, "→", WS_URL);
+		const wsUrl = getWsUrl("/status");
 
 		function connect() {
 			try {
-				socket.current = new WebSocket(WS_URL);
+				socket.current = new WebSocket(wsUrl);
 
 				socket.current.onopen = () => {
-					console.log("[status] connected via", wsProto);
 					setStatus("connecting"); // wait for first message
 				};
 
@@ -57,20 +46,13 @@ export function useOnlineStatus(): OnlineStatusResult {
 						deviceInfo?: DeviceInfo[];
 						lastSeen?: LastSeen | null;
 					};
-					console.log("[status] received:", data);
 					setStatus(data.online ? "online" : "offline");
 					setDeviceNames(data.deviceNames ?? []);
 					setDeviceInfo(data.deviceInfo ?? []);
 					setLastSeen(data.lastSeen ?? null);
 				};
 
-				socket.current.onclose = (event) => {
-					console.log(
-						"[status] disconnected — code:",
-						event.code,
-						"reason:",
-						event.reason || "(none)",
-					);
+				socket.current.onclose = () => {
 					setStatus("offline");
 					reconnectTimer.current = setTimeout(connect, 3000);
 				};

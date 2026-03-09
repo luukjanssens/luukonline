@@ -233,7 +233,7 @@ export function Chat() {
 							>
 								<label
 									ref={labelRef}
-									className="relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-white border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-current/5 border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">

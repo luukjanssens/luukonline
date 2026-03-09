@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getWsUrl } from "../utils/ws";
 
 export interface ChatMessage {
 	id: string;
@@ -13,13 +14,6 @@ export interface UseChatResult {
 	send: (text: string) => void;
 }
 
-// Derive chat WS URL the same way useOnlineStatus does: prefer VITE_WS_URL
-// (replacing the path with /chat) so local dev hits the real backend.
-const _wsBase = import.meta.env.VITE_WS_URL as string | undefined;
-const CHAT_URL = _wsBase
-	? _wsBase.replace(/\/[^/]+$/, "/chat")
-	: `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/chat`;
-
 export function useChat(): UseChatResult {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [connected, setConnected] = useState(false);
@@ -27,7 +21,7 @@ export function useChat(): UseChatResult {
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
-		const url = CHAT_URL;
+		const url = getWsUrl("/chat");
 
 		function connect() {
 			const ws = new WebSocket(url);
@@ -44,13 +38,14 @@ export function useChat(): UseChatResult {
 				};
 
 				if (data.type === "message" && data.from && data.text) {
+					const { from, text, timestamp } = data;
 					setMessages((prev) => [
 						...prev,
 						{
-							id: `${data.timestamp ?? Date.now()}-${Math.random()}`,
-							from: data.from as "visitor" | "luuk",
-							text: data.text as string,
-							timestamp: data.timestamp ?? Date.now(),
+							id: `${timestamp ?? Date.now()}-${Math.random()}`,
+							from,
+							text,
+							timestamp: timestamp ?? Date.now(),
 						},
 					]);
 				}

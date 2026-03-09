@@ -8,6 +8,7 @@ interface Client {
 	socket: WebSocket;
 	type: "laptop" | "browser";
 	name: string;
+	connectedAt: number;
 }
 
 const clients = new Set<Client>();
@@ -25,7 +26,12 @@ wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
 	}
 
 	const name = reqUrl.searchParams.get("name") ?? "Unknown";
-	clients.add({ socket, type: isLaptop ? "laptop" : "browser", name });
+	clients.add({
+		socket,
+		type: isLaptop ? "laptop" : "browser",
+		name,
+		connectedAt: Date.now(),
+	});
 	console.log(
 		`[+] ${isLaptop ? `Laptop (${name})` : "Browser"} connected (${clients.size} total)`,
 	);
@@ -52,6 +58,10 @@ function broadcast(): void {
 		online: laptops.length > 0,
 		devices: laptops.length,
 		deviceNames: laptops.map((client) => client.name),
+		deviceInfo: laptops.map((client) => ({
+			name: client.name,
+			connectedAt: client.connectedAt,
+		})),
 		timestamp: Date.now(),
 	});
 	clients.forEach(({ socket, type }) => {
@@ -65,5 +75,4 @@ console.log(`WebSocket server running on ws://localhost:${PORT}`);
 console.log(
 	`  Laptop connects to:  ws://localhost:${PORT}/device?name=<hostname>`,
 );
-console.log(`  Browser connects to: ws://localhost:${PORT}/status`);
 console.log(`  Browser connects to: ws://localhost:${PORT}/status`);
