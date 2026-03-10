@@ -122,12 +122,12 @@ export default function App() {
 						<button
 							type="button"
 							ref={groupRef}
-							className="status-pill relative hover:cursor-default group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-5 py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
+							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-5 py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
 							data-expanded={isExpanded ? "" : undefined}
 							onClick={() =>
-								setIsExpanded((p) => {
-									if (!p) setExpandCount((c) => c + 1);
-									return !p;
+								setIsExpanded((expanded) => {
+									if (!expanded) setExpandCount((count) => count + 1);
+									return !expanded;
 								})
 							}
 						>
