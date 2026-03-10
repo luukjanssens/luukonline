@@ -50,7 +50,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 	);
 }
 
-export function Chat() {
+export function Chat({ placeholder }: { placeholder: string }) {
 	const { messages, connected, send } = useChat();
 	const [input, setInput] = useState("");
 	const [hasSentMessage, setHasSentMessage] = useState(false);
@@ -66,6 +66,9 @@ export function Chat() {
 	const msgDoneRef = useRef(true);
 	const waitingForConfirmation = useRef(false);
 	const prevDisplayLenRef = useRef(0);
+	const [typedPlaceholder, setTypedPlaceholder] = useState(placeholder);
+	const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isFirstPlaceholderRender = useRef(true);
 
 	const display = messages;
 	const messageCount = display.length;
@@ -75,6 +78,27 @@ export function Chat() {
 	useEffect(() => {
 		inputRef.current?.focus();
 	}, []);
+
+	useEffect(() => {
+		if (isFirstPlaceholderRender.current) {
+			isFirstPlaceholderRender.current = false;
+			return;
+		}
+		if (typewriterRef.current) clearTimeout(typewriterRef.current);
+		setTypedPlaceholder("");
+		let i = 0;
+		const type = () => {
+			setTypedPlaceholder(placeholder.slice(0, i + 1));
+			i++;
+			if (i < placeholder.length) {
+				typewriterRef.current = setTimeout(type, 50);
+			}
+		};
+		typewriterRef.current = setTimeout(type, 0);
+		return () => {
+			if (typewriterRef.current) clearTimeout(typewriterRef.current);
+		};
+	}, [placeholder]);
 
 	useLayoutEffect(() => {
 		const element = scrollRef.current;
@@ -241,11 +265,20 @@ export function Chat() {
 											className="invisible whitespace-pre-wrap wrap-break-word col-start-1 row-start-1 pointer-events-none"
 											aria-hidden
 										>
-											{`${input}\u200b`}
+											{`${input || (hasSentMessage ? "" : placeholder)}\u200b`}
 										</span>
+										{!input && !hasSentMessage && (
+											<span
+												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word opacity-30"
+												aria-hidden
+											>
+												{typedPlaceholder}
+											</span>
+										)}
 										<textarea
 											ref={inputRef}
 											value={input}
+											placeholder={hasSentMessage ? "" : placeholder}
 											onChange={(events) => setInput(events.target.value)}
 											onFocus={() => setInputFocused(true)}
 											onBlur={() => setInputFocused(false)}
@@ -255,7 +288,7 @@ export function Chat() {
 													sendMessage(input);
 												}
 											}}
-											className="bg-transparent outline-none font-[inherit] text-inherit resize-none col-start-1 row-start-1 overflow-hidden w-full"
+											className="bg-transparent outline-none font-[inherit] text-inherit resize-none col-start-1 row-start-1 overflow-hidden w-full placeholder:opacity-0"
 										/>
 										{inputFocused && (
 											<span

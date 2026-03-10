@@ -45,6 +45,13 @@ const statusColors = {
 	light: { connecting: "#999", online: "#008844", offline: "#cc2020" },
 };
 
+const statusPlaceholder: Record<OnlineStatus, string> = {
+	connecting: "...",
+	online: "I'm online! Let's chat!",
+	offline:
+		"I'm currently offline. Leave a message and I'll get back to you when I'm online!",
+};
+
 type StatusColorKey = keyof typeof statusColors.dark;
 
 function getDeviceItems(
@@ -149,7 +156,7 @@ export default function App() {
 					{dark ? "light" : "dark"}
 				</button>
 			</div>
-			<Chat />
+			<Chat placeholder={statusPlaceholder[status]} />
 		</div>
 	);
 }
