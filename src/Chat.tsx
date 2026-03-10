@@ -259,7 +259,7 @@ export function Chat({
 					<ul
 						role="log"
 						aria-label="chat messages"
-					className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "py-8" : "py-4"}`}
+						className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "py-8" : "py-4"}`}
 					>
 						{display.map((message) => (
 							<Bubble key={message.id} msg={message} />

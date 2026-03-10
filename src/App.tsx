@@ -187,14 +187,30 @@ export default function App() {
 							)}
 						</button>
 					</p>
-					<button
-						type="button"
-						className="fixed right-6 bottom-6 cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
-						onClick={toggleDark}
-						aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-					>
-						{dark ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
-					</button>
+					<div className="fixed right-6 bottom-6 flex items-center gap-4">
+						<button
+							type="button"
+							className={`cursor-pointer border-0 bg-transparent p-0 text-inherit transition-[opacity,transform] duration-300 hover:opacity-100 ${highContrast ? "opacity-90 rotate-180" : "opacity-30 hover:opacity-70 rotate-0"}`}
+							onClick={toggleHighContrast}
+							aria-label={
+								highContrast ? "Disable high contrast" : "Enable high contrast"
+							}
+						>
+							<Contrast size={16} strokeWidth={highContrast ? 2.3 : 1.5} />
+						</button>
+						<button
+							type="button"
+							className="cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
+							onClick={toggleDark}
+							aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+						>
+							{dark ? (
+								<Sun size={16} strokeWidth={1.5} />
+							) : (
+								<Moon size={16} strokeWidth={1.5} />
+							)}
+						</button>
+					</div>
 				</div>
 
 				{/* Desktop: device pills that drop down and push the chat */}
@@ -216,8 +232,8 @@ export default function App() {
 										className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
 										style={{
 											animationName: "device-pill-pop",
-									animationDuration: "0.45s",
-									animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+											animationDuration: "0.45s",
+											animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
 											animationDelay: `${index * 80}ms`,
 											animationFillMode: "both",
 										}}
