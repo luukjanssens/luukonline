@@ -145,7 +145,7 @@ export default function App() {
 									{deviceItems.map((item, index) => (
 										<span
 											key={item.key}
-											className="whitespace-nowrap opacity-0 translate-y-1 group-data-expanded:opacity-20 group-data-expanded:translate-y-0 transition duration-300"
+											className="whitespace-nowrap text-[0.8em] opacity-0 translate-y-1 group-data-expanded:opacity-20 group-data-expanded:translate-y-0 transition duration-300"
 											style={{ transitionDelay: `${index * 60}ms` }}
 										>
 											{item.text}
@@ -180,7 +180,7 @@ export default function App() {
 								{deviceItems.map((item, index) => (
 									<span
 										key={`${item.key}-${expandCount}`}
-										className="device-pill inline-flex items-center px-5 py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase whitespace-nowrap rounded-full"
+										className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
 										style={{
 											animationName: "device-pill-pop",
 											animationDuration: "0.55s",

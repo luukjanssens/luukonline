@@ -207,36 +207,20 @@
 		0 2px 5px   rgba(0, 0, 0, 0.22);
 }
 
-/* ── Device pill (desktop pop-out) ── */
+/* ── Device pill (desktop pop-out) — secondary to status pill ── */
 .device-pill {
-	background: #ffffff;
-	background-image: linear-gradient(
-		160deg,
-		rgba(255, 255, 255, 0.90) 0%,
-		rgba(242, 240, 237, 0.40) 60%,
-		rgba(228, 224, 220, 0.20) 100%
-	);
-	border: 1px solid rgba(200, 194, 186, 0.35);
-	box-shadow:
-		0 1px 2px   rgba(60, 50, 40, 0.10),
-		0 3px 8px   rgba(44, 36, 26, 0.08),
-		0 10px 20px rgba(38, 30, 20, 0.05);
+	background: rgba(255, 255, 255, 0.50);
+	border: 1px solid rgba(200, 194, 186, 0.22);
+	box-shadow: 0 1px 3px rgba(60, 50, 40, 0.07);
+	opacity: 0.70;
 }
 
 :root:not([data-theme]) .device-pill,
 [data-theme="dark"] .device-pill {
-	background: #1c1c1c;
-	background-image: linear-gradient(
-		145deg,
-		#242424 0%,
-		#1c1c1c 60%,
-		#161616 100%
-	);
-	border: 1px solid rgba(255, 255, 255, 0.055);
-	box-shadow:
-		0 1px 2px   rgba(0, 0, 0, 0.40),
-		0 3px 8px   rgba(0, 0, 0, 0.30),
-		0 10px 20px rgba(0, 0, 0, 0.18);
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.045);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+	opacity: 0.65;
 }
 
 @layer base {
