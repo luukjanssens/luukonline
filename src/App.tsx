@@ -1,5 +1,7 @@
+import { Contrast, Moon, Sun } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDarkMode } from "./hooks/useDarkMode";
+import { useHighContrast } from "./hooks/useHighContrast";
 import {
 	type DeviceInfo,
 	type LastSeen,
@@ -72,7 +74,11 @@ function getDeviceItems(
 		}));
 	}
 	if (deviceNames.length > 0)
-		return deviceNames.map((name) => ({ key: name, text: `/ ${name}`, pillText: name }));
+		return deviceNames.map((name) => ({
+			key: name,
+			text: `/ ${name}`,
+			pillText: name,
+		}));
 	if (lastSeen)
 		return [
 			{
@@ -87,6 +93,7 @@ function getDeviceItems(
 export default function App() {
 	const { status, deviceNames, deviceInfo, lastSeen } = useOnlineStatus();
 	const [dark, toggleDark] = useDarkMode();
+	const [highContrast, toggleHighContrast] = useHighContrast();
 	const [now, setNow] = useState(Date.now());
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [expandCount, setExpandCount] = useState(0);
@@ -118,12 +125,12 @@ export default function App() {
 		const el = pillHeaderRef.current;
 		const fromY = pillFromYRef.current;
 		const anim = el.animate(
-			[
-				{ transform: `translateY(${fromY}px)` },
-				{ transform: "translateY(-6px)", offset: 0.82 },
-				{ transform: "translateY(0)" },
-			],
-			{ duration: 720, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" },
+			[{ transform: `translateY(${fromY}px)` }, { transform: "translateY(0)" }],
+			{
+				duration: 400,
+				easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+				fill: "forwards",
+			},
 		);
 		anim.finished.then(() => anim.cancel());
 		return () => anim.cancel();
@@ -140,7 +147,9 @@ export default function App() {
 				ref={pillHeaderRef}
 				className={`flex flex-col items-center w-full${chatStarted ? " fixed top-0 left-0 right-0 z-50 sticky-header" : ""}`}
 			>
-				<div className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-10"}`}>
+				<div
+					className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-10"}`}
+				>
 					<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
 						<button
 							type="button"
@@ -180,10 +189,11 @@ export default function App() {
 					</p>
 					<button
 						type="button"
-						className="absolute right-7 bottom-6 cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-xs tracking-widest lowercase text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
+						className="fixed right-6 bottom-6 cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
 						onClick={toggleDark}
+						aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
 					>
-						{dark ? "light" : "dark"}
+						{dark ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
 					</button>
 				</div>
 
@@ -194,7 +204,7 @@ export default function App() {
 						style={{
 							gridTemplateRows: isExpanded ? "1fr" : "0fr",
 							transition: isExpanded
-								? "grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)"
+								? "grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1)"
 								: "grid-template-rows 0.28s cubic-bezier(0.6, 0, 0.8, 0)",
 						}}
 					>
@@ -206,8 +216,8 @@ export default function App() {
 										className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
 										style={{
 											animationName: "device-pill-pop",
-											animationDuration: "0.55s",
-											animationTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+									animationDuration: "0.45s",
+									animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
 											animationDelay: `${index * 80}ms`,
 											animationFillMode: "both",
 										}}
@@ -221,13 +231,16 @@ export default function App() {
 				)}
 			</div>
 			{chatStarted && <div style={{ height: pillHeaderHeight }} aria-hidden />}
-			<Chat placeholder={statusPlaceholder[status]} onChatStart={() => {
-				if (!pillHeaderRef.current) return;
-				const rect = pillHeaderRef.current.getBoundingClientRect();
-				pillFromYRef.current = rect.top;
-				setPillHeaderHeight(rect.height);
-				setChatStarted(true);
-			}} />
+			<Chat
+				placeholder={statusPlaceholder[status]}
+				onChatStart={() => {
+					if (!pillHeaderRef.current) return;
+					const rect = pillHeaderRef.current.getBoundingClientRect();
+					pillFromYRef.current = rect.top;
+					setPillHeaderHeight(rect.height);
+					setChatStarted(true);
+				}}
+			/>
 		</div>
 	);
 }

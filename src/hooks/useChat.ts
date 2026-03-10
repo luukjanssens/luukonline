@@ -41,9 +41,14 @@ export function useChat(): UseChatResult {
 				if (data.type === "message" && data.from && data.text) {
 					const { from, text, timestamp } = data;
 					setMessages((prev) => {
-						const updated = from === "luuk"
-							? prev.map((message) => message.from === "visitor" ? { ...message, read: true } : message)
-							: prev;
+						const updated =
+							from === "luuk"
+								? prev.map((message) =>
+										message.from === "visitor"
+											? { ...message, read: true }
+											: message,
+									)
+								: prev;
 						return [
 							...updated,
 							{

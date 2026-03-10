@@ -15,35 +15,6 @@
 		}
 	}
 
-	@keyframes slide-in-up {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@keyframes device-pill-pop {
-		0% {
-			opacity: 0;
-			transform: translateY(-12px) scale(0.55) rotate(-6deg);
-		}
-		60% {
-			opacity: 1;
-			transform: translateY(5px) scale(1.07) rotate(1.5deg);
-		}
-		80% {
-			transform: translateY(-2px) scale(0.98) rotate(-0.5deg);
-		}
-		100% {
-			opacity: 1;
-			transform: translateY(0) scale(1) rotate(0deg);
-		}
-	}
-
 	--animate-blink-block: blink-block 1s step-start infinite;
 
 	@keyframes blink-block {
@@ -57,18 +28,44 @@
 	}
 
 	@keyframes sticky-backdrop-reveal {
-		from { opacity: 0; }
-		to   { opacity: 1; }
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+}
+
+@keyframes slide-in-up {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes device-pill-pop {
+	from {
+		opacity: 0;
+		transform: translateY(-10px) scale(0.8);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
 	}
 }
 
 /* Checkmarks: match current text colour for dark/light theme */
 :root:not([data-theme]) .checkmarks,
-[data-theme="dark"] .checkmarks {
+:root[data-theme="dark"] .checkmarks {
 	filter: brightness(0) invert(1);
 }
 
-[data-theme="light"] .checkmarks {
+:root[data-theme="light"] .checkmarks {
 	filter: brightness(0);
 }
 
@@ -76,35 +73,35 @@
 
 /* Sent (visitor, right-aligned) — more prominent, it's "yours" */
 .chat-bubble--sent {
-	background: rgba(255, 255, 255, 0.60);
+	background: rgba(255, 255, 255, 0.6);
 	background-image: linear-gradient(
 		155deg,
-		rgba(255, 255, 255, 0.90) 0%,
-		rgba(244, 240, 236, 0.50) 60%,
+		rgba(255, 255, 255, 0.9) 0%,
+		rgba(244, 240, 236, 0.5) 60%,
 		rgba(232, 228, 222, 0.25) 100%
 	);
 	box-shadow:
-		0 1px 1px   rgba(55, 45, 35, 0.14),
-		0 2px 5px   rgba(48, 38, 28, 0.12),
-		0 6px 14px  rgba(42, 34, 24, 0.09),
+		0 1px 1px rgba(55, 45, 35, 0.14),
+		0 2px 5px rgba(48, 38, 28, 0.12),
+		0 6px 14px rgba(42, 34, 24, 0.09),
 		0 14px 28px rgba(36, 28, 18, 0.06),
-		inset 0 1px 0   rgba(255, 255, 255, 0.88),
-		inset 0 -1px 0  rgba(50, 40, 30, 0.08);
+		inset 0 1px 0 rgba(255, 255, 255, 0.88),
+		inset 0 -1px 0 rgba(50, 40, 30, 0.08);
 }
 
 /* Received (Luuk's messages, left-aligned) — subtler, slightly recessed feel */
 .chat-bubble--received {
-	background: rgba(255, 255, 255, 0.30);
+	background: rgba(255, 255, 255, 0.3);
 	background-image: linear-gradient(
 		155deg,
 		rgba(255, 255, 255, 0.55) 0%,
-		rgba(240, 236, 232, 0.20) 100%
+		rgba(240, 236, 232, 0.2) 100%
 	);
 	box-shadow:
-		0 1px 2px   rgba(55, 45, 35, 0.10),
-		0 3px 8px   rgba(42, 34, 24, 0.07),
-		inset 0 1px 0   rgba(255, 255, 255, 0.65),
-		inset 0 -1px 0  rgba(50, 40, 30, 0.06);
+		0 1px 2px rgba(55, 45, 35, 0.1),
+		0 3px 8px rgba(42, 34, 24, 0.07),
+		inset 0 1px 0 rgba(255, 255, 255, 0.65),
+		inset 0 -1px 0 rgba(50, 40, 30, 0.06);
 }
 
 /* Dark mode bubbles */
@@ -118,27 +115,23 @@
 		#1c1c1c 100%
 	);
 	box-shadow:
-		0 1px 1px   rgba(0, 0, 0, 0.65),
-		0 2px 5px   rgba(0, 0, 0, 0.55),
-		0 6px 14px  rgba(0, 0, 0, 0.42),
+		0 1px 1px rgba(0, 0, 0, 0.65),
+		0 2px 5px rgba(0, 0, 0, 0.55),
+		0 6px 14px rgba(0, 0, 0, 0.42),
 		0 14px 28px rgba(0, 0, 0, 0.28),
-		inset 0 1px 0   rgba(255, 255, 255, 0.09),
-		inset 0 -1px 0  rgba(0, 0, 0, 0.55);
+		inset 0 1px 0 rgba(255, 255, 255, 0.09),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.55);
 }
 
 :root:not([data-theme]) .chat-bubble--received,
 [data-theme="dark"] .chat-bubble--received {
 	background: #1a1a1a;
-	background-image: linear-gradient(
-		155deg,
-		#222222 0%,
-		#1a1a1a 100%
-	);
+	background-image: linear-gradient(155deg, #222222 0%, #1a1a1a 100%);
 	box-shadow:
-		0 1px 2px   rgba(0, 0, 0, 0.55),
-		0 3px 8px   rgba(0, 0, 0, 0.38),
-		inset 0 1px 0   rgba(255, 255, 255, 0.06),
-		inset 0 -1px 0  rgba(0, 0, 0, 0.45);
+		0 1px 2px rgba(0, 0, 0, 0.55),
+		0 3px 8px rgba(0, 0, 0, 0.38),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* ── Light mode (default) ── */
@@ -146,34 +139,34 @@
 	background: #ffffff;
 	background-image: linear-gradient(
 		160deg,
-		rgba(255, 255, 255, 0.90) 0%,
-		rgba(242, 240, 237, 0.40) 60%,
-		rgba(228, 224, 220, 0.20) 100%
+		rgba(255, 255, 255, 0.9) 0%,
+		rgba(242, 240, 237, 0.4) 60%,
+		rgba(228, 224, 220, 0.2) 100%
 	);
 	border: 1px solid rgba(200, 194, 186, 0.35);
 	will-change: transform;
 	transition:
 		background 0.3s ease,
-		transform   220ms cubic-bezier(.22, .68, 0, 1.2);
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 	box-shadow:
-		0 1px 2px   rgba(60, 50, 40, 0.10),
-		0 3px 8px   rgba(44, 36, 26, 0.08),
+		0 1px 2px rgba(60, 50, 40, 0.1),
+		0 3px 8px rgba(44, 36, 26, 0.08),
 		0 10px 20px rgba(38, 30, 20, 0.05);
 }
 
 .status-pill:hover {
 	transform: translateY(-2px) scale(1.012);
 	box-shadow:
-		0 2px 4px    rgba(60, 50, 40, 0.09),
-		0 6px 14px   rgba(44, 36, 26, 0.07),
-		0 16px 28px  rgba(38, 30, 20, 0.05);
+		0 2px 4px rgba(60, 50, 40, 0.09),
+		0 6px 14px rgba(44, 36, 26, 0.07),
+		0 16px 28px rgba(38, 30, 20, 0.05);
 }
 
 .status-pill:active {
 	transform: translateY(1px) scale(0.995);
 	box-shadow:
 		0 0.5px 1px rgba(60, 50, 40, 0.12),
-		0 2px 5px   rgba(44, 36, 26, 0.08);
+		0 2px 5px rgba(44, 36, 26, 0.08);
 }
 
 /* ── Dark mode ── */
@@ -188,8 +181,8 @@
 	);
 	border: 1px solid rgba(255, 255, 255, 0.055);
 	box-shadow:
-		0 1px 2px   rgba(0, 0, 0, 0.40),
-		0 3px 8px   rgba(0, 0, 0, 0.30),
+		0 1px 2px rgba(0, 0, 0, 0.4),
+		0 3px 8px rgba(0, 0, 0, 0.3),
 		0 10px 20px rgba(0, 0, 0, 0.18);
 }
 
@@ -198,9 +191,9 @@
 [data-theme="dark"] .status-pill:hover {
 	transform: translateY(-2px) scale(1.012);
 	box-shadow:
-		0 2px 4px    rgba(0, 0, 0, 0.30),
-		0 6px 14px   rgba(0, 0, 0, 0.22),
-		0 16px 28px  rgba(0, 0, 0, 0.14);
+		0 2px 4px rgba(0, 0, 0, 0.3),
+		0 6px 14px rgba(0, 0, 0, 0.22),
+		0 16px 28px rgba(0, 0, 0, 0.14);
 }
 
 /* Active: pressed in, shadows compress, highlight dims */
@@ -209,15 +202,15 @@
 	transform: translateY(1px) scale(0.995);
 	box-shadow:
 		0 0.5px 1px rgba(0, 0, 0, 0.35),
-		0 2px 5px   rgba(0, 0, 0, 0.22);
+		0 2px 5px rgba(0, 0, 0, 0.22);
 }
 
 /* ── Device pill (desktop pop-out) — secondary to status pill ── */
 .device-pill {
-	background: rgba(255, 255, 255, 0.50);
+	background: rgba(255, 255, 255, 0.5);
 	border: 1px solid rgba(200, 194, 186, 0.22);
 	box-shadow: 0 1px 3px rgba(60, 50, 40, 0.07);
-	opacity: 0.70;
+	opacity: 0.7;
 }
 
 :root:not([data-theme]) .device-pill,
@@ -229,19 +222,20 @@
 }
 
 .sticky-header::before {
-	content: '';
+	content: "";
 	position: absolute;
 	inset: 0;
 	z-index: -1;
-	background: rgba(247, 247, 245, 0.80);
+	background: rgba(247, 247, 245, 0.8);
 	backdrop-filter: blur(14px);
 	-webkit-backdrop-filter: blur(14px);
-	animation: sticky-backdrop-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+	animation: sticky-backdrop-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.32s
+		both;
 }
 
 :root:not([data-theme]) .sticky-header::before,
 [data-theme="dark"] .sticky-header::before {
-	background: rgba(10, 10, 10, 0.80);
+	background: rgba(10, 10, 10, 0.8);
 }
 
 @layer base {
@@ -272,4 +266,121 @@
 		background: #f7f7f5;
 		color: #555;
 	}
+}
+
+/* ── High contrast mode ── */
+
+/* Root colors */
+[data-contrast="high"]:not([data-theme]),
+[data-contrast="high"][data-theme="dark"] {
+	background: #000000;
+	color: #ffffff;
+}
+
+[data-contrast="high"][data-theme="light"] {
+	background: #ffffff;
+	color: #000000;
+}
+
+/* Remove reduced-opacity text dimming */
+[data-contrast="high"] .opacity-20,
+[data-contrast="high"] .opacity-30,
+[data-contrast="high"] .opacity-50,
+[data-contrast="high"] .opacity-60,
+[data-contrast="high"] .opacity-90 {
+	opacity: 1 !important;
+}
+
+/* Restore full-opacity borders on chat bubbles */
+[data-contrast="high"] .border-current\/15,
+[data-contrast="high"] .border-current\/10 {
+	border-color: currentColor;
+}
+
+/* Checkmarks */
+[data-contrast="high"]:not([data-theme]) .checkmarks,
+[data-contrast="high"][data-theme="dark"] .checkmarks {
+	filter: brightness(0) invert(1);
+}
+
+[data-contrast="high"][data-theme="light"] .checkmarks {
+	filter: brightness(0);
+}
+
+/* Chat bubbles — dark high contrast */
+[data-contrast="high"]:not([data-theme]) .chat-bubble--sent,
+[data-contrast="high"][data-theme="dark"] .chat-bubble--sent,
+[data-contrast="high"]:not([data-theme]) .chat-bubble--received,
+[data-contrast="high"][data-theme="dark"] .chat-bubble--received {
+	background: #000000;
+	background-image: none;
+	box-shadow: none;
+}
+
+/* Chat bubbles — light high contrast */
+[data-contrast="high"][data-theme="light"] .chat-bubble--sent,
+[data-contrast="high"][data-theme="light"] .chat-bubble--received {
+	background: #ffffff;
+	background-image: none;
+	box-shadow: none;
+}
+
+/* Status pill — dark high contrast */
+[data-contrast="high"]:not([data-theme]) .status-pill,
+[data-contrast="high"][data-theme="dark"] .status-pill {
+	background: #000000;
+	background-image: none;
+	border: 2px solid #ffffff;
+	box-shadow: none;
+}
+
+[data-contrast="high"]:not([data-theme]) .status-pill:hover,
+[data-contrast="high"][data-theme="dark"] .status-pill:hover,
+[data-contrast="high"]:not([data-theme]) .status-pill:active,
+[data-contrast="high"][data-theme="dark"] .status-pill:active {
+	box-shadow: none;
+}
+
+/* Status pill — light high contrast */
+[data-contrast="high"][data-theme="light"] .status-pill {
+	background: #ffffff;
+	background-image: none;
+	border: 2px solid #000000;
+	box-shadow: none;
+}
+
+[data-contrast="high"][data-theme="light"] .status-pill:hover,
+[data-contrast="high"][data-theme="light"] .status-pill:active {
+	box-shadow: none;
+}
+
+/* Device pill — dark high contrast */
+[data-contrast="high"]:not([data-theme]) .device-pill,
+[data-contrast="high"][data-theme="dark"] .device-pill {
+	background: #000000;
+	border: 1px solid #ffffff;
+	box-shadow: none;
+	opacity: 1;
+}
+
+/* Device pill — light high contrast */
+[data-contrast="high"][data-theme="light"] .device-pill {
+	background: #ffffff;
+	border: 1px solid #000000;
+	box-shadow: none;
+	opacity: 1;
+}
+
+/* Sticky header backdrop */
+[data-contrast="high"]:not([data-theme]) .sticky-header::before,
+[data-contrast="high"][data-theme="dark"] .sticky-header::before {
+	background: #000000;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+[data-contrast="high"][data-theme="light"] .sticky-header::before {
+	background: #ffffff;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }

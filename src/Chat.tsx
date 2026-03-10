@@ -26,7 +26,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 		>
 			<div className="relative max-w-[80%] md:max-w-[60%]">
 				<p
-					className={`text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 ${
+					className={`text-xs tracking-wide lowercase leading-relaxed border px-2.5 py-1.5 md:px-3 ${
 						isLuuk
 							? "chat-bubble--received border-current/15 opacity-60"
 							: "chat-bubble--sent border-current/10 opacity-90"
@@ -43,20 +43,38 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 				</p>
 			</div>
 			<span className="text-[10px] tracking-wide lowercase mt-0.5 px-1 flex items-center gap-1">
-				{isLuuk
-					? <span className="opacity-30">{`received${time ? ` · ${time}` : ""}`}</span>
-					: (
-						<>
-							<span className="opacity-30">{time || "sent"}</span>
-							<img src="/checkmarks.png" alt="" className="checkmarks h-[13px] w-auto inline-block" style={message.read ? { filter: "invert(40%) sepia(100%) saturate(1500%) hue-rotate(115deg) brightness(110%) contrast(110%)" } : { opacity: 0.3 }} />
-						</>
-					)}
+				{isLuuk ? (
+					<span className="opacity-30">{`received${time ? ` · ${time}` : ""}`}</span>
+				) : (
+					<>
+						<span className="opacity-30">{time || "sent"}</span>
+						<img
+							src="/checkmarks.png"
+							alt=""
+							className="checkmarks h-3.25 w-auto inline-block"
+							style={
+								message.read
+									? {
+											filter:
+												"invert(40%) sepia(100%) saturate(1500%) hue-rotate(115deg) brightness(110%) contrast(110%)",
+										}
+									: { opacity: 0.3 }
+							}
+						/>
+					</>
+				)}
 			</span>
 		</li>
 	);
 }
 
-export function Chat({ placeholder, onChatStart }: { placeholder: string; onChatStart?: () => void }) {
+export function Chat({
+	placeholder,
+	onChatStart,
+}: {
+	placeholder: string;
+	onChatStart?: () => void;
+}) {
 	const { messages, connected, send } = useChat();
 	const [input, setInput] = useState("");
 	const [hasSentMessage, setHasSentMessage] = useState(false);
@@ -241,7 +259,7 @@ export function Chat({ placeholder, onChatStart }: { placeholder: string; onChat
 					<ul
 						role="log"
 						aria-label="chat messages"
-						className={`flex flex-col gap-2 px-5 ${hasMessages ? "py-8" : "py-4"}`}
+					className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "py-8" : "py-4"}`}
 					>
 						{display.map((message) => (
 							<Bubble key={message.id} msg={message} />
@@ -260,7 +278,7 @@ export function Chat({ placeholder, onChatStart }: { placeholder: string; onChat
 							>
 								<label
 									ref={labelRef}
-									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 opacity-60 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">
