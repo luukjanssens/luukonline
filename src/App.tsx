@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDarkMode } from "./hooks/useDarkMode";
 import {
 	type DeviceInfo,
@@ -90,7 +90,11 @@ export default function App() {
 	const [now, setNow] = useState(Date.now());
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [expandCount, setExpandCount] = useState(0);
+	const [chatStarted, setChatStarted] = useState(false);
+	const [pillHeaderHeight, setPillHeaderHeight] = useState(0);
+	const pillFromYRef = useRef(0);
 	const groupRef = useRef<HTMLButtonElement>(null);
+	const pillHeaderRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (deviceInfo.length === 0) return;
@@ -109,6 +113,22 @@ export default function App() {
 		return () => document.removeEventListener("click", handler);
 	}, [isExpanded]);
 
+	useLayoutEffect(() => {
+		if (!chatStarted || !pillHeaderRef.current) return;
+		const el = pillHeaderRef.current;
+		const fromY = pillFromYRef.current;
+		const anim = el.animate(
+			[
+				{ transform: `translateY(${fromY}px)` },
+				{ transform: "translateY(-6px)", offset: 0.82 },
+				{ transform: "translateY(0)" },
+			],
+			{ duration: 720, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" },
+		);
+		anim.finished.then(() => anim.cancel());
+		return () => anim.cancel();
+	}, [chatStarted]);
+
 	const deviceItems = getDeviceItems(deviceInfo, deviceNames, lastSeen, now);
 	const statusColor =
 		statusColors[dark ? "dark" : "light"][status as StatusColorKey] ??
@@ -116,8 +136,11 @@ export default function App() {
 
 	return (
 		<div className="h-dvh flex flex-col items-center justify-center gap-6">
-			<div className="flex flex-col items-center w-full">
-				<div className="flex w-full items-center justify-center pt-10">
+			<div
+				ref={pillHeaderRef}
+				className={`flex flex-col items-center w-full${chatStarted ? " fixed top-0 left-0 right-0 z-50 sticky-header" : ""}`}
+			>
+				<div className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-10"}`}>
 					<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
 						<button
 							type="button"
@@ -197,7 +220,14 @@ export default function App() {
 					</div>
 				)}
 			</div>
-			<Chat placeholder={statusPlaceholder[status]} />
+			{chatStarted && <div style={{ height: pillHeaderHeight }} aria-hidden />}
+			<Chat placeholder={statusPlaceholder[status]} onChatStart={() => {
+				if (!pillHeaderRef.current) return;
+				const rect = pillHeaderRef.current.getBoundingClientRect();
+				pillFromYRef.current = rect.top;
+				setPillHeaderHeight(rect.height);
+				setChatStarted(true);
+			}} />
 		</div>
 	);
 }

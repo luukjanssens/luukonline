@@ -56,7 +56,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 	);
 }
 
-export function Chat({ placeholder }: { placeholder: string }) {
+export function Chat({ placeholder, onChatStart }: { placeholder: string; onChatStart?: () => void }) {
 	const { messages, connected, send } = useChat();
 	const [input, setInput] = useState("");
 	const [hasSentMessage, setHasSentMessage] = useState(false);
@@ -169,6 +169,7 @@ export function Chat({ placeholder }: { placeholder: string }) {
 			pendingFlipLeft.current =
 				labelRef.current?.getBoundingClientRect().left ?? null;
 			setHasSentMessage(true);
+			onChatStart?.();
 		}
 
 		send(text.trim());
