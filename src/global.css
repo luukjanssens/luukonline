@@ -39,6 +39,16 @@
 	}
 }
 
+/* Checkmarks: match current text colour for dark/light theme */
+:root:not([data-theme]) .checkmarks,
+[data-theme="dark"] .checkmarks {
+	filter: brightness(0) invert(1);
+}
+
+[data-theme="light"] .checkmarks {
+	filter: brightness(0);
+}
+
 @layer base {
 	textarea,
 	input {

@@ -42,10 +42,15 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 					{message.text}
 				</p>
 			</div>
-			<span className="text-[10px] tracking-wide lowercase opacity-30 mt-0.5 px-1">
+			<span className="text-[10px] tracking-wide lowercase mt-0.5 px-1 flex items-center gap-1">
 				{isLuuk
-					? `received${time ? ` · ${time}` : ""}`
-					: `sent${time ? ` · ${time}` : ""}`}
+					? <span className="opacity-30">{`received${time ? ` · ${time}` : ""}`}</span>
+					: (
+						<>
+							<span className="opacity-30">{time || "sent"}</span>
+							<img src="/checkmarks.png" alt="" className="checkmarks h-[13px] w-auto inline-block" style={message.read ? { filter: "invert(40%) sepia(100%) saturate(1500%) hue-rotate(115deg) brightness(110%) contrast(110%)" } : { opacity: 0.3 }} />
+						</>
+					)}
 			</span>
 		</li>
 	);

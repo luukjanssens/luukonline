@@ -6,6 +6,7 @@ export interface ChatMessage {
 	from: "visitor" | "luuk";
 	text: string;
 	timestamp: number;
+	read?: boolean;
 }
 
 export interface UseChatResult {
@@ -39,15 +40,20 @@ export function useChat(): UseChatResult {
 
 				if (data.type === "message" && data.from && data.text) {
 					const { from, text, timestamp } = data;
-					setMessages((prev) => [
-						...prev,
-						{
-							id: `${timestamp ?? Date.now()}-${Math.random()}`,
-							from,
-							text,
-							timestamp: timestamp ?? Date.now(),
-						},
-					]);
+					setMessages((prev) => {
+						const updated = from === "luuk"
+							? prev.map((message) => message.from === "visitor" ? { ...message, read: true } : message)
+							: prev;
+						return [
+							...updated,
+							{
+								id: `${timestamp ?? Date.now()}-${Math.random()}`,
+								from,
+								text,
+								timestamp: timestamp ?? Date.now(),
+							},
+						];
+					});
 				}
 
 				if (data.type === "location_request") {
