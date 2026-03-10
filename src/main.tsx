@@ -4,19 +4,19 @@ import App from "./App";
 
 console.log(
 	`%c
- _                _              _ _            
-| |   _   _ _  _| | ___  _ __  | (_)_ __   ___ 
-| |  | | | | || | |/ _ \\| '_ \\ | | | '_ \\ / _ \\
-| |__| |_| | || | | (_) | | | || | | | | |  __/
-|_____\\__,_|\\__,_|_|\\___/|_| |_||_|_|_| |_|\\___|
+    __            __                ___
+   / /_  ____  __/ /__ ____  ____  / (_)___  ___
+  / / / / / / / / //_// __ \\/ __ \\/ / / __ \\/ _ \\
+ / / /_/ / /_/ / ,< _/ /_/ / / / / / / / / /  __/
+/_/\\__,_/\\__,_/_/|_(_)____/_/ /_/_/_/_/ /_/\\___/
 
   👋 hey, you found the console!
 
-  luukonline is forever a work in progress —
+  luuk.online is forever work in progress —
   like every website, it's never really done.
 
   got ideas, suggestions, or just want to say hi?
-  HMU →  hi@luukonline.com
+  HMU →  hi@luukjanssens.nl
 
 `,
 	"color: #a78bfa; font-family: monospace; font-size: 12px;",

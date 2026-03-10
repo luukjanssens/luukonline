@@ -28,8 +28,8 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 				<p
 					className={`text-xs tracking-wide lowercase leading-relaxed border px-3 py-1.5 ${
 						isLuuk
-							? "border-current/20 opacity-60"
-							: "border-current/10 opacity-90"
+							? "chat-bubble--received border-current/15 opacity-60"
+							: "chat-bubble--sent border-current/10 opacity-90"
 					}`}
 					style={{
 						borderRadius: "1rem",
@@ -265,7 +265,7 @@ export function Chat({ placeholder }: { placeholder: string }) {
 							>
 								<label
 									ref={labelRef}
-									className="relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border bg-current/5 border-current/20 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-3 py-1.5 inline-flex items-start gap-2 opacity-60 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[6ch]">
