@@ -142,19 +142,19 @@ export default function App() {
 		"inherit";
 
 	return (
-		<div className="h-dvh flex flex-col items-center justify-center gap-6">
+		<div className="h-dvh flex flex-col items-center justify-center gap-4 md:gap-6">
 			<div
 				ref={pillHeaderRef}
 				className={`flex flex-col items-center w-full${chatStarted ? " fixed top-0 left-0 right-0 z-50 sticky-header" : ""}`}
 			>
 				<div
-					className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-10"}`}
+					className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-6 md:pt-10"}`}
 				>
-					<p className="text-sm font-light tracking-widest lowercase whitespace-nowrap flex">
+					<p className="text-sm font-light tracking-wider md:tracking-widest lowercase whitespace-nowrap flex">
 						<button
 							type="button"
 							ref={groupRef}
-							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-5 py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
+							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
 							data-expanded={isExpanded ? "" : undefined}
 							onClick={() =>
 								setIsExpanded((expanded) => {
@@ -187,7 +187,7 @@ export default function App() {
 							)}
 						</button>
 					</p>
-					<div className="fixed right-6 bottom-6 flex items-center gap-4">
+					<div className="fixed right-4 bottom-4 md:right-6 md:bottom-6 flex items-center gap-3 md:gap-4">
 						<button
 							type="button"
 							className={`cursor-pointer border-0 bg-transparent p-0 text-inherit transition-[opacity,transform] duration-300 hover:opacity-100 ${highContrast ? "opacity-90 rotate-180" : "opacity-30 hover:opacity-70 rotate-0"}`}
