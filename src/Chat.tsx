@@ -107,12 +107,6 @@ export function Chat({ placeholder }: { placeholder: string }) {
 	}, [placeholder]);
 
 	useLayoutEffect(() => {
-		const element = scrollRef.current;
-		if (!element) return;
-		element.scrollTop = element.scrollHeight;
-	});
-
-	useLayoutEffect(() => {
 		if (
 			!hasSentMessage ||
 			pendingFlipLeft.current === null ||
@@ -233,7 +227,7 @@ export function Chat({ placeholder }: { placeholder: string }) {
 					hasMessages
 						? {
 								maskImage:
-									"linear-gradient(to bottom, transparent, black 8%, black 88%, transparent)",
+									"linear-gradient(to bottom, transparent, black 8%, black 100%, transparent)",
 							}
 						: undefined
 				}
