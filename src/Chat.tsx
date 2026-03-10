@@ -1,4 +1,5 @@
 import {
+	type CSSProperties,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
@@ -189,6 +190,30 @@ export function Chat({ placeholder }: { placeholder: string }) {
 		}, collapseDelay);
 	}
 
+	let inputBubbleStyle: CSSProperties;
+	if (inputHidden) {
+		inputBubbleStyle = {
+			maxHeight: 0,
+			opacity: 0,
+			overflow: "hidden",
+			transition: "max-height 0.2s ease, opacity 0.15s ease",
+			pointerEvents: "none",
+		};
+	} else if (inputEntering) {
+		inputBubbleStyle = {
+			maxHeight: "10rem",
+			overflow: "visible",
+			transition: "max-height 0.35s ease",
+			animation: "slide-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+		};
+	} else {
+		inputBubbleStyle = {
+			maxHeight: "10rem",
+			opacity: 1,
+			overflow: "visible",
+		};
+	}
+
 	return (
 		<section
 			className="flex flex-col overflow-hidden"
@@ -224,29 +249,7 @@ export function Chat({ placeholder }: { placeholder: string }) {
 
 						{/* input bubble — inline with message flow */}
 						<li
-							style={
-								inputHidden
-									? {
-											maxHeight: 0,
-											opacity: 0,
-											overflow: "hidden",
-											transition: "max-height 0.2s ease, opacity 0.15s ease",
-											pointerEvents: "none",
-										}
-									: inputEntering
-										? {
-												maxHeight: "10rem",
-												overflow: "visible",
-												transition: "max-height 0.35s ease",
-												animation:
-													"slide-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards",
-											}
-										: {
-												maxHeight: "10rem",
-												opacity: 1,
-												overflow: "visible",
-											}
-							}
+							style={inputBubbleStyle}
 							onAnimationEnd={() => {
 								setInputEntering(false);
 								inputRef.current?.focus();
