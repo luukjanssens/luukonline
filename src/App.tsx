@@ -118,7 +118,7 @@ export default function App() {
 					<button
 						type="button"
 						ref={groupRef}
-						className="relative hover:cursor-default group flex gap-2 touch-manipulation border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
+					className="status-pill relative hover:cursor-default group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-5 py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase"
 						data-expanded={isExpanded ? "" : undefined}
 						onTouchStart={() => setIsExpanded((p) => !p)}
 						onKeyDown={(e) => {
