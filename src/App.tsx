@@ -94,6 +94,7 @@ export default function App() {
 	const { status, deviceNames, deviceInfo, lastSeen } = useOnlineStatus();
 	const [dark, toggleDark] = useDarkMode();
 	const [highContrast, toggleHighContrast] = useHighContrast();
+	const [contrastRotation, setContrastRotation] = useState(0);
 	const [now, setNow] = useState(Date.now());
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [expandCount, setExpandCount] = useState(0);
@@ -187,30 +188,6 @@ export default function App() {
 							)}
 						</button>
 					</p>
-					<div className="fixed right-4 bottom-4 md:right-6 md:bottom-6 flex items-center gap-3 md:gap-4">
-						<button
-							type="button"
-							className={`cursor-pointer border-0 bg-transparent p-0 text-inherit transition-[opacity,transform] duration-300 hover:opacity-100 ${highContrast ? "opacity-90 rotate-180" : "opacity-30 hover:opacity-70 rotate-0"}`}
-							onClick={toggleHighContrast}
-							aria-label={
-								highContrast ? "Disable high contrast" : "Enable high contrast"
-							}
-						>
-							<Contrast size={16} strokeWidth={highContrast ? 2.3 : 1.5} />
-						</button>
-						<button
-							type="button"
-							className="cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
-							onClick={toggleDark}
-							aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-						>
-							{dark ? (
-								<Sun size={16} strokeWidth={1.5} />
-							) : (
-								<Moon size={16} strokeWidth={1.5} />
-							)}
-						</button>
-					</div>
 				</div>
 
 				{/* Desktop: device pills that drop down and push the chat */}
@@ -245,6 +222,34 @@ export default function App() {
 						</div>
 					</div>
 				)}
+			</div>
+			<div className="fixed right-4 bottom-4 md:right-6 md:bottom-6 flex items-center gap-3 md:gap-4">
+				<button
+					type="button"
+					className={`cursor-pointer border-0 bg-transparent p-0 text-inherit transition-[opacity,transform] duration-300 hover:opacity-100 ${highContrast ? "opacity-90" : "opacity-30 hover:opacity-70"}`}
+					style={{ transform: `rotate(${contrastRotation}deg)` }}
+					onClick={() => {
+						setContrastRotation((rotation) => rotation + 180);
+						toggleHighContrast();
+					}}
+					aria-label={
+						highContrast ? "Disable high contrast" : "Enable high contrast"
+					}
+				>
+					<Contrast size={16} strokeWidth={1.5} />
+				</button>
+				<button
+					type="button"
+					className="cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-30 transition-opacity duration-200 hover:opacity-70"
+					onClick={toggleDark}
+					aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+				>
+					{dark ? (
+						<Sun size={16} strokeWidth={1.5} />
+					) : (
+						<Moon size={16} strokeWidth={1.5} />
+					)}
+				</button>
 			</div>
 			{chatStarted && <div style={{ height: pillHeaderHeight }} aria-hidden />}
 			<Chat
