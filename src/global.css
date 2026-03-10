@@ -330,7 +330,7 @@
 [data-contrast="high"][data-theme="dark"] .status-pill {
 	background: #000000;
 	background-image: none;
-	border: 2px solid #ffffff;
+	border: 1px solid #ffffff;
 	box-shadow: none;
 }
 
@@ -345,7 +345,7 @@
 [data-contrast="high"][data-theme="light"] .status-pill {
 	background: #ffffff;
 	background-image: none;
-	border: 2px solid #000000;
+	border: 1px solid #000000;
 	box-shadow: none;
 }
 
