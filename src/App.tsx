@@ -64,6 +64,77 @@ function CheckingText() {
 	);
 }
 
+const LUUK_IS_CHARS = [..."luuk is"].map((character, index) => ({
+	char: character,
+	key: `li${index}`,
+	delay: `${index * 0.045}s`,
+}));
+
+const STATUS_LABEL_CHARS: Record<
+	"online" | "offline",
+	Array<{ char: string; key: string; delay: string }>
+> = {
+	online: [..."online"].map((char, i) => ({
+		char,
+		key: `on${i}`,
+		delay: `${(LUUK_IS_CHARS.length + i) * 0.045}s`,
+	})),
+	offline: [..."offline"].map((char, i) => ({
+		char,
+		key: `of${i}`,
+		delay: `${(LUUK_IS_CHARS.length + i) * 0.045}s`,
+	})),
+};
+
+const DOT_DELAY = `${LUUK_IS_CHARS.length * 0.045}s`;
+
+function StatusText({
+	status,
+	statusColor,
+}: {
+	status: "online" | "offline";
+	statusColor: string;
+}) {
+	const labelChars = STATUS_LABEL_CHARS[status];
+	return (
+		<>
+			<span className="opacity-65 inline-flex">
+				{LUUK_IS_CHARS.map(({ char, key, delay }) => (
+					<span
+						key={key}
+						className="animate-reveal-char"
+						style={{ animationDelay: delay }}
+					>
+						{char === " " ? "\u00a0" : char}
+					</span>
+				))}
+			</span>
+			<span
+				className="inline-flex items-center gap-2 transition-colors duration-600"
+				style={{ color: statusColor }}
+			>
+				<span
+					className="inline-flex animate-reveal-char"
+					style={{ animationDelay: DOT_DELAY }}
+				>
+					<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
+				</span>
+				<span className="inline-flex">
+					{labelChars.map(({ char, key, delay }) => (
+						<span
+							key={key}
+							className="animate-reveal-char"
+							style={{ animationDelay: delay }}
+						>
+							{char}
+						</span>
+					))}
+				</span>
+			</span>
+		</>
+	);
+}
+
 const statusColors = {
 	dark: { connecting: "#888", online: "#00cc6a", offline: "#e03030" },
 	light: { connecting: "#999", online: "#008844", offline: "#cc2020" },
@@ -178,7 +249,9 @@ export default function App() {
 					className={`flex w-full items-center justify-center${chatStarted ? " pt-3" : " pt-6 md:pt-10"}`}
 				>
 					<p className="text-sm font-light tracking-wider md:tracking-widest lowercase whitespace-nowrap flex">
-						<button
+						<motion.button
+							layout="size"
+							transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
 							type="button"
 							ref={groupRef}
 							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
@@ -197,18 +270,13 @@ export default function App() {
 							{status === "connecting" ? (
 								<CheckingText />
 							) : (
-								<>
-									<span className="opacity-65">luuk is</span>
-									<span
-										className="inline-flex items-center gap-2 transition-colors duration-600"
-										style={{ color: statusColor }}
-									>
-										<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
-										{statusLabel[status]}
-									</span>
-								</>
+								<StatusText
+									key={status}
+									status={status}
+									statusColor={statusColor}
+								/>
 							)}
-						</button>
+						</motion.button>
 					</p>
 				</div>
 
