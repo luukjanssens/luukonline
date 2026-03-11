@@ -156,9 +156,15 @@ export default function App() {
 							ref={groupRef}
 							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
 							data-expanded={isExpanded ? "" : undefined}
+							aria-label={`luuk is ${statusLabel[status]}${
+								deviceItems.length > 0
+									? ` — click to ${isExpanded ? "hide" : "show"} devices`
+									: ""
+							}`}
+							aria-expanded={deviceItems.length > 0 ? isExpanded : undefined}
 							onClick={() => setIsExpanded((expanded) => !expanded)}
 						>
-							<span className="opacity-50">luuk is</span>
+							<span className="opacity-65">luuk is</span>
 							<span
 								className="inline-flex items-center gap-2 transition-colors duration-600"
 								style={{ color: statusColor }}
@@ -182,35 +188,58 @@ export default function App() {
 						}}
 					>
 						<div className="min-h-0 overflow-hidden">
-							<div className="flex justify-center gap-3 pt-3 pb-2">
-								<AnimatePresence>
-									{isExpanded &&
-										deviceItems.map((item, index) => (
-											<motion.span
-												key={item.key}
-												className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
-												initial={{ opacity: 0, scale: 0.8, y: -10 }}
-												animate={{ opacity: 1, scale: 1, y: 0 }}
-												exit={{
-													opacity: 0,
-													scale: 0.8,
-													y: -10,
-													transition: {
-														duration: 0.2,
-														ease: [0.6, 0, 0.8, 0],
-														delay: index * 0.05,
-													},
-												}}
+							<div className="flex justify-center pt-3 pb-2">
+								<div className="relative inline-flex items-center gap-3">
+									<AnimatePresence>
+										{isExpanded &&
+											deviceItems.map((item, index) => (
+												<motion.span
+													key={item.key}
+													className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
+													initial={{ opacity: 0, scale: 0.8, y: -10 }}
+													animate={{ opacity: 1, scale: 1, y: 0 }}
+													exit={{
+														opacity: 0,
+														scale: 0.8,
+														y: -10,
+														transition: {
+															duration: 0.2,
+															ease: [0.6, 0, 0.8, 0],
+															delay: index * 0.05,
+														},
+													}}
+													transition={{
+														delay: index * 0.08,
+														duration: 0.45,
+														ease: [0.22, 1, 0.36, 1],
+													}}
+												>
+													{item.pillText}
+												</motion.span>
+											))}
+									</AnimatePresence>
+									<AnimatePresence>
+										{isExpanded && (
+											<motion.button
+												key="dismiss"
+												type="button"
+												aria-label="Close"
+												className="dismiss-pill absolute -top-2 -right-2"
+												initial={{ opacity: 0, scale: 0.5 }}
+												animate={{ opacity: 1, scale: 1 }}
+												exit={{ opacity: 0, scale: 0.5 }}
 												transition={{
-													delay: index * 0.08,
-													duration: 0.45,
+													delay: deviceItems.length * 0.08,
+													duration: 0.3,
 													ease: [0.22, 1, 0.36, 1],
 												}}
+												onClick={() => setIsExpanded(false)}
 											>
-												{item.pillText}
-											</motion.span>
-										))}
-								</AnimatePresence>
+												×
+											</motion.button>
+										)}
+									</AnimatePresence>
+								</div>
 							</div>
 						</div>
 					</div>

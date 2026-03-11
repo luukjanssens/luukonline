@@ -28,7 +28,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 				<p
 					className={`text-xs tracking-wide lowercase leading-relaxed border px-2.5 py-1.5 md:px-3 ${
 						isLuuk
-							? "chat-bubble--received border-current/15 opacity-60"
+							? "chat-bubble--received border-current/15 opacity-75"
 							: "chat-bubble--sent border-current/10 opacity-90"
 					}`}
 					style={{
@@ -38,16 +38,16 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 							: { borderBottomRightRadius: 0 }),
 					}}
 				>
-					{isLuuk && <span className="opacity-50">luuk: </span>}
+					{isLuuk && <span className="opacity-65">luuk: </span>}
 					{message.text}
 				</p>
 			</div>
 			<span className="text-[10px] tracking-wide lowercase mt-0.5 px-1 flex items-center gap-1">
 				{isLuuk ? (
-					<span className="opacity-30">{`received${time ? ` · ${time}` : ""}`}</span>
+					<span className="opacity-45">{`received${time ? ` · ${time}` : ""}`}</span>
 				) : (
 					<>
-						<span className="opacity-30">{time || "sent"}</span>
+						<span className="opacity-45">{time || "sent"}</span>
 						<img
 							src="/checkmarks.png"
 							alt=""
@@ -278,7 +278,7 @@ export function Chat({
 							>
 								<label
 									ref={labelRef}
-									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 opacity-60 cursor-text"
+									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 opacity-75 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed">
@@ -290,7 +290,7 @@ export function Chat({
 										</span>
 										{!input && !hasSentMessage && (
 											<span
-												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word opacity-30"
+												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word opacity-45"
 												aria-hidden
 											>
 												{typedPlaceholder}
@@ -309,6 +309,7 @@ export function Chat({
 													sendMessage(input);
 												}
 											}}
+											aria-label="write a message"
 											className="bg-transparent outline-none font-[inherit] text-inherit resize-none col-start-1 row-start-1 overflow-hidden w-full placeholder:opacity-0"
 										/>
 										{inputFocused && (
