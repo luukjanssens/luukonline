@@ -24,7 +24,7 @@ function Bubble({ msg: message }: { msg: ChatMessage }) {
 		<li
 			className={`flex flex-col list-none ${isLuuk ? "items-start" : "items-end"}`}
 		>
-			<div className="relative max-w-[80%] md:max-w-[60%]">
+			<div className="relative max-w-[60%]">
 				<p
 					className={`text-xs tracking-wide lowercase leading-relaxed border px-2.5 py-1.5 md:px-3 ${
 						isLuuk
@@ -84,6 +84,8 @@ export function Chat({
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const labelRef = useRef<HTMLLabelElement>(null);
+	const gridRef = useRef<HTMLDivElement>(null);
+	const prevGridSizeRef = useRef<{ w: number; h: number } | null>(null);
 	const pendingFlipLeft = useRef<number | null>(null);
 	// Two-step animation guards: both must be true before the new input reveals
 	const flipDoneRef = useRef(true);
@@ -93,6 +95,59 @@ export function Chat({
 	const [typedPlaceholder, setTypedPlaceholder] = useState(placeholder);
 	const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isFirstPlaceholderRender = useRef(true);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: input and inputFocused drive DOM changes we measure imperatively — they are not read as JS values but trigger the right re-runs
+	useLayoutEffect(() => {
+		const el = gridRef.current;
+		if (!el) return;
+
+		// Cancel any in-flight animation and measure the new natural dimensions.
+		el.style.transition = "none";
+		el.style.width = "";
+		el.style.height = "";
+		const newW = el.offsetWidth;
+		const newH = el.scrollHeight;
+
+		const prev = prevGridSizeRef.current;
+		prevGridSizeRef.current = { w: newW, h: newH };
+
+		if (prev === null) {
+			void el.offsetHeight;
+			return;
+		}
+
+		const wChanged = prev.w !== newW;
+		const hChanged = prev.h !== newH;
+
+		if (!wChanged && !hChanged) {
+			void el.offsetHeight;
+			return;
+		}
+
+		// FLIP: pin at old dimensions, force reflow, then let CSS transition to new.
+		if (wChanged) el.style.width = `${prev.w}px`;
+		if (hChanged) el.style.height = `${prev.h}px`;
+		void el.offsetHeight;
+
+		const props = [wChanged && "width", hChanged && "height"]
+			.filter(Boolean)
+			.map((p) => `${p} 0.2s ease-in-out`)
+			.join(", ");
+		el.style.transition = props;
+		if (wChanged) el.style.width = `${newW}px`;
+		if (hChanged) el.style.height = `${newH}px`;
+
+		let fired = 0;
+		const expected = (wChanged ? 1 : 0) + (hChanged ? 1 : 0);
+		const onDone = () => {
+			if (++fired < expected) return;
+			el.style.transition = "";
+			el.style.width = "";
+			el.style.height = "";
+		};
+		el.addEventListener("transitionend", onDone);
+		return () => el.removeEventListener("transitionend", onDone);
+	}, [input, inputFocused]);
 
 	const display = messages;
 	const messageCount = display.length;
@@ -281,14 +336,17 @@ export function Chat({
 									className={`chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 cursor-text transition-opacity duration-200 ${inputFocused ? "opacity-90" : hasSentMessage ? "opacity-35" : "animate-chat-nudge"}`}
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
-									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed">
+									<div
+										ref={gridRef}
+										className="relative grid text-xs tracking-wide lowercase leading-relaxed"
+									>
 										<span
 											className="invisible whitespace-pre-wrap wrap-break-word col-start-1 row-start-1 pointer-events-none"
 											aria-hidden
 										>
-											{`${input || (hasSentMessage ? "" : placeholder)}\u200b`}
+											{`${input || (!hasSentMessage && !inputFocused ? placeholder : "")}\u200b`}
 										</span>
-										{!input && !hasSentMessage && (
+										{!input && !hasSentMessage && !inputFocused && (
 											<span
 												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word"
 												aria-hidden
@@ -299,7 +357,9 @@ export function Chat({
 										<textarea
 											ref={inputRef}
 											value={input}
-											placeholder={hasSentMessage ? "" : placeholder}
+											placeholder={
+												hasSentMessage || inputFocused ? "" : placeholder
+											}
 											onChange={(events) => setInput(events.target.value)}
 											onFocus={() => setInputFocused(true)}
 											onBlur={() => setInputFocused(false)}
@@ -317,9 +377,9 @@ export function Chat({
 											aria-hidden
 										>
 											<span className="invisible">{input}</span>
-											<span
-												className={`inline-block w-[0.55em] h-[1em] rounded-xs bg-current align-text-bottom mb-0.5 ${inputFocused ? "animate-blink-block" : "opacity-25"}`}
-											/>
+											{inputFocused && (
+												<span className="inline-block w-[0.55em] h-[1em] rounded-xs bg-current align-text-bottom mb-0.5 animate-blink-block" />
+											)}
 										</span>
 									</div>
 								</label>
