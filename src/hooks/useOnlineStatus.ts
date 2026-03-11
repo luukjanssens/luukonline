@@ -27,6 +27,7 @@ export function useOnlineStatus(): OnlineStatusResult {
 	const [lastSeen, setLastSeen] = useState<LastSeen | null>(null);
 	const socket = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const reconnectAttempts = useRef<number>(0);
 
 	useEffect(() => {
 		const wsUrl = getWsUrl("/status");
@@ -36,6 +37,7 @@ export function useOnlineStatus(): OnlineStatusResult {
 				socket.current = new WebSocket(wsUrl);
 
 				socket.current.onopen = () => {
+					reconnectAttempts.current = 0;
 					setStatus("connecting"); // wait for first message
 				};
 
@@ -53,7 +55,8 @@ export function useOnlineStatus(): OnlineStatusResult {
 				};
 
 				socket.current.onclose = () => {
-					setStatus("offline");
+					reconnectAttempts.current += 1;
+					setStatus(reconnectAttempts.current >= 3 ? "offline" : "connecting");
 					reconnectTimer.current = setTimeout(connect, 3000);
 				};
 
@@ -63,7 +66,8 @@ export function useOnlineStatus(): OnlineStatusResult {
 				};
 			} catch (err) {
 				console.error("[status] failed to connect:", err);
-				setStatus("offline");
+				reconnectAttempts.current += 1;
+				setStatus(reconnectAttempts.current >= 3 ? "offline" : "connecting");
 				reconnectTimer.current = setTimeout(connect, 3000);
 			}
 		}

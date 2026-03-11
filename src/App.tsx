@@ -142,18 +142,6 @@ export default function App() {
 		(item) => !dismissedKeys.has(item.key),
 	);
 
-	function dismissPill(key: string) {
-		const next = new Set(dismissedKeys);
-		next.add(key);
-		const remaining = deviceItems.filter((d) => !next.has(d.key));
-		if (remaining.length === 0) {
-			setIsExpanded(false);
-			setDismissedKeys(new Set());
-		} else {
-			setDismissedKeys(next);
-		}
-	}
-
 	const statusColor =
 		statusColors[dark ? "dark" : "light"][status as StatusColorKey] ??
 		"inherit";
