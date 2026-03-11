@@ -278,7 +278,7 @@ export function Chat({
 							>
 								<label
 									ref={labelRef}
-									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 opacity-75 cursor-text"
+									className={`chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 cursor-text transition-opacity duration-200 ${inputFocused ? "opacity-90" : "opacity-35"}`}
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed">
@@ -312,18 +312,15 @@ export function Chat({
 											aria-label="write a message"
 											className="bg-transparent outline-none font-[inherit] text-inherit resize-none col-start-1 row-start-1 overflow-hidden w-full placeholder:opacity-0"
 										/>
-										{inputFocused && (
+										<span
+											className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word"
+											aria-hidden
+										>
+											<span className="invisible">{input}</span>
 											<span
-												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word"
-												aria-hidden
-											>
-												<span className="invisible">{input}</span>
-												<span
-													className="inline-block w-[0.55em] h-[1em]
-												rounded-xs bg-current align-text-bottom animate-blink-block mb-0.5"
-												/>
-											</span>
-										)}
+												className={`inline-block w-[0.55em] h-[1em] rounded-xs bg-current align-text-bottom mb-0.5 ${inputFocused ? "animate-blink-block" : "opacity-25"}`}
+											/>
+										</span>
 									</div>
 								</label>
 							</div>

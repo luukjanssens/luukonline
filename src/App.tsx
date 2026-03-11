@@ -49,7 +49,7 @@ const statusColors = {
 
 const statusPlaceholder: Record<OnlineStatus, string> = {
 	connecting: "...",
-	online: "I'm online! Let's chat!",
+	online: "I'm online, let's chat! Click here 🙂",
 	offline:
 		"I'm currently offline. Leave a message and I'll get back to you when I'm online!",
 };
