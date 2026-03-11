@@ -40,6 +40,17 @@ interface VisitorMeta {
 	referer: string | null;
 }
 
+interface HistoryEntry {
+	from: "visitor" | "luuk";
+	text: string;
+	timestamp: number;
+}
+
+interface HistoryStore {
+	messages: HistoryEntry[];
+	createdAt: number;
+}
+
 export class Chat extends DurableObject<ChatEnv> {
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
@@ -50,7 +61,10 @@ export class Chat extends DurableObject<ChatEnv> {
 			}
 
 			const { 0: client, 1: server } = new WebSocketPair();
-			const sessionId = crypto.randomUUID();
+			const UUID_V4 =
+				/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+			const rawId = url.searchParams.get("sessionId") ?? "";
+			const sessionId = UUID_V4.test(rawId) ? rawId : crypto.randomUUID();
 
 			const cf = request.cf;
 			const meta: VisitorMeta = {
@@ -70,6 +84,21 @@ export class Chat extends DurableObject<ChatEnv> {
 			await this.ctx.storage.put(`meta:${sessionId}`, meta);
 
 			this.ctx.acceptWebSocket(server, ["visitor", sessionId]);
+
+			const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+			const history = await this.ctx.storage.get<HistoryStore>(
+				`history:${sessionId}`,
+			);
+			if (history) {
+				if (Date.now() - history.createdAt > THIRTY_DAYS_MS) {
+					await this.ctx.storage.delete(`history:${sessionId}`);
+				} else if (history.messages.length > 0) {
+					server.send(
+						JSON.stringify({ type: "history", messages: history.messages }),
+					);
+				}
+			}
+
 			server.send(JSON.stringify({ type: "connected", sessionId }));
 			return new Response(null, { status: 101, webSocket: client });
 		}
@@ -148,15 +177,23 @@ export class Chat extends DurableObject<ChatEnv> {
 
 		const text = data.text.trim().slice(0, 500);
 
+		const ts = Date.now();
+
 		// Echo back to visitor immediately
 		socket.send(
 			JSON.stringify({
 				type: "message",
 				from: "visitor",
 				text,
-				timestamp: Date.now(),
+				timestamp: ts,
 			}),
 		);
+
+		await this.appendToHistory(sessionId, {
+			from: "visitor",
+			text,
+			timestamp: ts,
+		});
 
 		const meta = await this.ctx.storage.get<VisitorMeta>(`meta:${sessionId}`);
 		const location = [meta?.city, meta?.postalCode, meta?.region, meta?.country]
@@ -204,24 +241,54 @@ export class Chat extends DurableObject<ChatEnv> {
 		);
 		if (!sessionId) return;
 
-		// Find the active WebSocket for that session
-		const socket = this.ctx
-			.getWebSockets("visitor")
-			.find((s) => this.ctx.getTags(s)[1] === sessionId);
-		if (!socket) return;
-
 		if (msg.text === "/location") {
-			socket.send(JSON.stringify({ type: "location_request" }));
+			// Location requests are only meaningful if the visitor is currently connected
+			const socket = this.ctx
+				.getWebSockets("visitor")
+				.find((s) => this.ctx.getTags(s)[1] === sessionId);
+			if (socket) socket.send(JSON.stringify({ type: "location_request" }));
 			return;
 		}
 
-		socket.send(
-			JSON.stringify({
-				type: "message",
-				from: "luuk",
-				text: msg.text,
-				timestamp: Date.now(),
-			}),
+		const ts = Date.now();
+		// Always persist to history so offline visitors see it on reconnect
+		await this.appendToHistory(sessionId, {
+			from: "luuk",
+			text: msg.text,
+			timestamp: ts,
+		});
+
+		// Live-deliver only if the visitor is currently connected
+		const socket = this.ctx
+			.getWebSockets("visitor")
+			.find((s) => this.ctx.getTags(s)[1] === sessionId);
+		if (socket) {
+			socket.send(
+				JSON.stringify({
+					type: "message",
+					from: "luuk",
+					text: msg.text,
+					timestamp: ts,
+				}),
+			);
+		}
+	}
+
+	private async appendToHistory(
+		sessionId: string,
+		entry: HistoryEntry,
+	): Promise<void> {
+		const stored = await this.ctx.storage.get<HistoryStore>(
+			`history:${sessionId}`,
 		);
+		const store: HistoryStore = stored ?? {
+			messages: [],
+			createdAt: Date.now(),
+		};
+		store.messages.push(entry);
+		if (store.messages.length > 100) {
+			store.messages = store.messages.slice(-100);
+		}
+		await this.ctx.storage.put(`history:${sessionId}`, store);
 	}
 }

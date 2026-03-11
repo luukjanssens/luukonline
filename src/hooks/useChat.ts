@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getWsUrl } from "../utils/ws";
 
+function getOrCreateSessionId(): string {
+	const key = "chat_session_id";
+	const existing = localStorage.getItem(key);
+	if (existing) return existing;
+	const id = crypto.randomUUID();
+	localStorage.setItem(key, id);
+	return id;
+}
+
 export interface ChatMessage {
 	id: string;
 	from: "visitor" | "luuk";
@@ -13,11 +22,15 @@ export interface UseChatResult {
 	messages: ChatMessage[];
 	connected: boolean;
 	send: (text: string) => void;
+	hasHistory: boolean;
+	newMessageCount: number;
 }
 
 export function useChat(): UseChatResult {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [connected, setConnected] = useState(false);
+	const [hasHistory, setHasHistory] = useState(false);
+	const [newMessageCount, setNewMessageCount] = useState(0);
 	const socketRef = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -25,7 +38,7 @@ export function useChat(): UseChatResult {
 		const url = getWsUrl("/chat");
 
 		function connect() {
-			const ws = new WebSocket(url);
+			const ws = new WebSocket(`${url}?sessionId=${getOrCreateSessionId()}`);
 			socketRef.current = ws;
 
 			ws.onopen = () => setConnected(true);
@@ -36,7 +49,31 @@ export function useChat(): UseChatResult {
 					from?: "visitor" | "luuk";
 					text?: string;
 					timestamp?: number;
+					messages?: Array<{
+						from: "visitor" | "luuk";
+						text: string;
+						timestamp: number;
+					}>;
 				};
+
+				if (data.type === "history" && data.messages) {
+					const lastSeen = Number(
+						localStorage.getItem("chat_last_seen_at") ?? "0",
+					);
+					const mapped: ChatMessage[] = data.messages.map((entry) => ({
+						id: `hist-${entry.timestamp}-${Math.random()}`,
+						from: entry.from,
+						text: entry.text,
+						timestamp: entry.timestamp,
+						read: true,
+					}));
+					const newCount = data.messages.filter(
+						(entry) => entry.from === "luuk" && entry.timestamp > lastSeen,
+					).length;
+					setMessages(mapped);
+					setHasHistory(true);
+					setNewMessageCount(newCount);
+				}
 
 				if (data.type === "message" && data.from && data.text) {
 					const { from, text, timestamp } = data;
@@ -94,6 +131,7 @@ export function useChat(): UseChatResult {
 			};
 
 			ws.onclose = () => {
+				localStorage.setItem("chat_last_seen_at", String(Date.now()));
 				setConnected(false);
 				reconnectTimer.current = setTimeout(connect, 3000);
 			};
@@ -116,5 +154,5 @@ export function useChat(): UseChatResult {
 		}
 	}, []);
 
-	return { messages, connected, send };
+	return { messages, connected, send, hasHistory, newMessageCount };
 }
