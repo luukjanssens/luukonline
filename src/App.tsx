@@ -171,28 +171,14 @@ export default function App() {
 								<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
 								{statusLabel[status]}
 							</span>
-							{/* Mobile: text labels below the pill */}
-							{deviceItems.length > 0 && (
-								<span className="absolute top-full left-0 mt-1 flex flex-col md:hidden">
-									{deviceItems.map((item, index) => (
-										<span
-											key={item.key}
-											className="whitespace-nowrap text-[0.8em] opacity-0 translate-y-1 group-data-expanded:opacity-20 group-data-expanded:translate-y-0 transition duration-300"
-											style={{ transitionDelay: `${index * 60}ms` }}
-										>
-											{item.text}
-										</span>
-									))}
-								</span>
-							)}
 						</button>
 					</p>
 				</div>
 
-				{/* Desktop: device pills that drop down and push the chat */}
+				{/* Device pills that drop down and push the chat */}
 				{deviceItems.length > 0 && (
 					<div
-						className="hidden md:grid w-full overflow-hidden"
+						className="grid w-full overflow-hidden"
 						style={{
 							gridTemplateRows: isExpanded ? "1fr" : "0fr",
 							transition: isExpanded
@@ -235,9 +221,23 @@ export default function App() {
 						highContrast ? "Disable high contrast" : "Enable high contrast"
 					}
 				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.5"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
 						<circle cx="12" cy="12" r="10" />
-						<path d="M12 18a6 6 0 0 0 0-12v12z" fill="currentColor" stroke="none" />
+						<path
+							d="M12 18a6 6 0 0 0 0-12v12z"
+							fill="currentColor"
+							stroke="none"
+						/>
 					</svg>
 				</button>
 				<button
@@ -247,7 +247,17 @@ export default function App() {
 					aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
 				>
 					{dark ? (
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							aria-hidden="true"
+						>
 							<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
 							<path d="M12 2v2" />
 							<path d="M12 20v2" />
@@ -259,8 +269,22 @@ export default function App() {
 							<path d="m19.07 4.93-1.41 1.41" />
 						</svg>
 					) : (
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-							<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401z" fill="currentColor" stroke="none" />
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401z"
+								fill="currentColor"
+								stroke="none"
+							/>
 						</svg>
 					)}
 				</button>

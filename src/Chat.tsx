@@ -281,7 +281,7 @@ export function Chat({
 									className="chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 opacity-60 cursor-text"
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
-									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed min-w-[320px]">
+									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed">
 										<span
 											className="invisible whitespace-pre-wrap wrap-break-word col-start-1 row-start-1 pointer-events-none"
 											aria-hidden
