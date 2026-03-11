@@ -189,7 +189,7 @@ export default function App() {
 					>
 						<div className="min-h-0 overflow-hidden">
 							<div className="flex justify-center pt-3 pb-2">
-								<div className="relative inline-flex items-center gap-3">
+								<div className="relative inline-flex flex-col items-center gap-2">
 									<AnimatePresence>
 										{isExpanded &&
 											deviceItems.map((item, index) => (
