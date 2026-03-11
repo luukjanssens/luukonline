@@ -234,7 +234,7 @@ export function Chat({
 
 	return (
 		<section
-			className="flex flex-col overflow-hidden"
+			className="flex flex-col overflow-hidden w-full md:w-[60dvw] md:max-w-3xl"
 			style={{
 				height: sectionHeight,
 				transition: "height 0.35s ease",
@@ -253,7 +253,7 @@ export function Chat({
 			>
 				<div
 					ref={scrollRef}
-					className="w-full md:w-[60dvw] max-w-3xl overflow-y-auto "
+					className="w-full overflow-y-auto "
 					style={{ scrollbarWidth: "none" }}
 				>
 					<ul
