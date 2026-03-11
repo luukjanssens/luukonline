@@ -36,11 +36,33 @@ function formatLastSeen(timestamp: number): string {
 	return `${dateString} at ${timeString}`;
 }
 
-const statusLabel: Record<OnlineStatus, string> = {
-	connecting: "checking...",
+const statusLabel: Record<OnlineStatus, string | null> = {
+	connecting: null,
 	online: "online",
 	offline: "offline",
 };
+
+const CHECKING_CHARS = [..."is luuk online?"].map((char, i) => ({
+	char,
+	key: `c${i}`,
+	delay: `${i * 0.08}s`,
+}));
+
+function CheckingText() {
+	return (
+		<span className="inline-flex" aria-hidden>
+			{CHECKING_CHARS.map(({ char, key, delay }) => (
+				<span
+					key={key}
+					className="animate-letter-wave"
+					style={{ animationDelay: delay }}
+				>
+					{char === " " ? "\u00a0" : char}
+				</span>
+			))}
+		</span>
+	);
+}
 
 const statusColors = {
 	dark: { connecting: "#888", online: "#00cc6a", offline: "#e03030" },
@@ -161,7 +183,7 @@ export default function App() {
 							ref={groupRef}
 							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
 							data-expanded={isExpanded ? "" : undefined}
-							aria-label={`luuk is ${statusLabel[status]}${
+							aria-label={`luuk is ${statusLabel[status] ?? "checking"}${
 								deviceItems.length > 0
 									? ` — click to ${isExpanded ? "hide" : "show"} devices`
 									: ""
@@ -172,14 +194,20 @@ export default function App() {
 								setIsExpanded((expanded) => !expanded);
 							}}
 						>
-							<span className="opacity-65">luuk is</span>
-							<span
-								className="inline-flex items-center gap-2 transition-colors duration-600"
-								style={{ color: statusColor }}
-							>
-								<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
-								{statusLabel[status]}
-							</span>
+							{status === "connecting" ? (
+								<CheckingText />
+							) : (
+								<>
+									<span className="opacity-65">luuk is</span>
+									<span
+										className="inline-flex items-center gap-2 transition-colors duration-600"
+										style={{ color: statusColor }}
+									>
+										<span className="inline-block size-1.5 shrink-0 rounded-full bg-current animate-pulse-dot shadow-sm mt-0.5" />
+										{statusLabel[status]}
+									</span>
+								</>
+							)}
 						</button>
 					</p>
 				</div>

@@ -43,6 +43,18 @@
 		}
 	}
 
+	--animate-letter-wave: letter-wave 1.6s ease-in-out infinite;
+
+	@keyframes letter-wave {
+		0%,
+		100% {
+			opacity: 0.2;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
 	--animate-blink-block: blink-block 1s step-start infinite;
 
 	@keyframes blink-block {
