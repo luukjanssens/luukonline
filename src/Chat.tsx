@@ -290,7 +290,7 @@ export function Chat({
 										</span>
 										{!input && !hasSentMessage && (
 											<span
-												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word opacity-45"
+												className="col-start-1 row-start-1 pointer-events-none whitespace-pre-wrap wrap-break-word"
 												aria-hidden
 											>
 												{typedPlaceholder}
