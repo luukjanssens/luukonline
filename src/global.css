@@ -15,6 +15,36 @@
 		}
 	}
 
+	--animate-chat-nudge: chat-nudge 4s ease-in-out infinite 1.5s;
+
+	@keyframes chat-nudge {
+		0%,
+		60%,
+		100% {
+			opacity: 0.35;
+			transform: translateY(0);
+		}
+		30% {
+			opacity: 0.6;
+			transform: translateY(-3px);
+		}
+	}
+
+	--animate-chat-nudge: chat-nudge 4s ease-in-out infinite 1.5s;
+
+	@keyframes chat-nudge {
+		0%,
+		60%,
+		100% {
+			opacity: 0.35;
+			transform: translateY(0);
+		}
+		30% {
+			opacity: 0.6;
+			transform: translateY(-3px);
+		}
+	}
+
 	--animate-blink-block: blink-block 1s step-start infinite;
 
 	@keyframes blink-block {

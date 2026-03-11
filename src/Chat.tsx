@@ -278,7 +278,7 @@ export function Chat({
 							>
 								<label
 									ref={labelRef}
-									className={`chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 cursor-text transition-opacity duration-200 ${inputFocused ? "opacity-90" : "opacity-35"}`}
+									className={`chat-bubble--sent relative max-w-[80%] md:max-w-[60%] text-xs tracking-wide lowercase leading-relaxed border border-current/15 px-2.5 py-1.5 md:px-3 inline-flex items-start gap-2 cursor-text transition-opacity duration-200 ${inputFocused ? "opacity-90" : hasSentMessage ? "opacity-35" : "animate-chat-nudge"}`}
 									style={{ borderRadius: "1rem", borderBottomRightRadius: 0 }}
 								>
 									<div className="relative grid text-xs tracking-wide lowercase leading-relaxed">
