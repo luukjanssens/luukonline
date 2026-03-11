@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { useHighContrast } from "./hooks/useHighContrast";
@@ -96,7 +97,6 @@ export default function App() {
 	const [contrastRotation, setContrastRotation] = useState(0);
 	const [now, setNow] = useState(Date.now());
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [expandCount, setExpandCount] = useState(0);
 	const [chatStarted, setChatStarted] = useState(false);
 	const [pillHeaderHeight, setPillHeaderHeight] = useState(0);
 	const pillFromYRef = useRef(0);
@@ -148,7 +148,7 @@ export default function App() {
 				className={`flex flex-col items-center w-full${chatStarted ? " fixed top-0 left-0 right-0 z-50 sticky-header" : ""}`}
 			>
 				<div
-					className={`flex w-full items-center justify-center${chatStarted ? " pt-3 pb-3" : " pt-6 md:pt-10"}`}
+					className={`flex w-full items-center justify-center${chatStarted ? " pt-3" : " pt-6 md:pt-10"}`}
 				>
 					<p className="text-sm font-light tracking-wider md:tracking-widest lowercase whitespace-nowrap flex">
 						<button
@@ -156,12 +156,7 @@ export default function App() {
 							ref={groupRef}
 							className="status-pill relative group inline-flex items-center gap-2 touch-manipulation border-0 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 font-[inherit] text-[length:inherit] tracking-[inherit] lowercase hover:cursor-pointer"
 							data-expanded={isExpanded ? "" : undefined}
-							onClick={() =>
-								setIsExpanded((expanded) => {
-									if (!expanded) setExpandCount((count) => count + 1);
-									return !expanded;
-								})
-							}
+							onClick={() => setIsExpanded((expanded) => !expanded)}
 						>
 							<span className="opacity-50">luuk is</span>
 							<span
@@ -188,21 +183,34 @@ export default function App() {
 					>
 						<div className="min-h-0 overflow-hidden">
 							<div className="flex justify-center gap-3 pt-3 pb-2">
-								{deviceItems.map((item, index) => (
-									<span
-										key={`${item.key}-${expandCount}`}
-										className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
-										style={{
-											animationName: "device-pill-pop",
-											animationDuration: "0.45s",
-											animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-											animationDelay: `${index * 80}ms`,
-											animationFillMode: "both",
-										}}
-									>
-										{item.pillText}
-									</span>
-								))}
+								<AnimatePresence>
+									{isExpanded &&
+										deviceItems.map((item, index) => (
+											<motion.span
+												key={item.key}
+												className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
+												initial={{ opacity: 0, scale: 0.8, y: -10 }}
+												animate={{ opacity: 1, scale: 1, y: 0 }}
+												exit={{
+													opacity: 0,
+													scale: 0.8,
+													y: -10,
+													transition: {
+														duration: 0.2,
+														ease: [0.6, 0, 0.8, 0],
+														delay: index * 0.05,
+													},
+												}}
+												transition={{
+													delay: index * 0.08,
+													duration: 0.45,
+													ease: [0.22, 1, 0.36, 1],
+												}}
+											>
+												{item.pillText}
+											</motion.span>
+										))}
+								</AnimatePresence>
 							</div>
 						</div>
 					</div>
