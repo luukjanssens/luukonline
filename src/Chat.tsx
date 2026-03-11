@@ -331,17 +331,19 @@ export function Chat({
 						aria-label="chat messages"
 						className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "py-8" : "py-4"}`}
 					>
-{display.map((message, index) => (
-						<Fragment key={message.id}>
-							{showDivider && index === dividerIndexRef.current && (
-								<li className="flex items-center gap-2 py-1 list-none">
-									<span className="flex-1 border-t border-current/15" />
-									<span className="text-[10px] tracking-wide lowercase opacity-40">new messages</span>
-									<span className="flex-1 border-t border-current/15" />
-								</li>
-							)}
-							<Bubble msg={message} />
-						</Fragment>
+						{display.map((message, index) => (
+							<Fragment key={message.id}>
+								{showDivider && index === dividerIndexRef.current && (
+									<li className="flex items-center gap-2 py-1 list-none">
+										<span className="flex-1 border-t border-current/15" />
+										<span className="text-[10px] tracking-wide lowercase opacity-40">
+											new messages
+										</span>
+										<span className="flex-1 border-t border-current/15" />
+									</li>
+								)}
+								<Bubble msg={message} />
+							</Fragment>
 						))}
 
 						{/* input bubble — inline with message flow */}
