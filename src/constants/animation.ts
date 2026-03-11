@@ -1,0 +1,10 @@
+export const CHAR_STAGGER_DELAY = 0.045;
+export const WAVE_STAGGER_DELAY = 0.08;
+export const FLIP_DURATION = "0.55s";
+export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+export const FIRST_SEND_COLLAPSE_DELAY = 570;
+export const SUBSEQUENT_COLLAPSE_DELAY = 40;
+export const COLLAPSE_TRANSITION_DURATION = 200;
+export const TYPEWRITER_DELAY = 50;
+export const DEVICE_PILL_STAGGER = 0.08;
+export const DEVICE_PILL_DURATION = 0.45;

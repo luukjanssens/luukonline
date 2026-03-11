@@ -1,73 +1,20 @@
 import {
-	Fragment,
 	type CSSProperties,
+	Fragment,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
-import { type ChatMessage, useChat } from "./hooks/useChat";
-
-function formatTime(timestamp: number): string {
-	if (!timestamp) return "";
-	const date = new Date(timestamp);
-	const hours = date.getHours().toString().padStart(2, "0");
-	const minutes = date.getMinutes().toString().padStart(2, "0");
-	return `${hours}:${minutes}`;
-}
-
-function Bubble({ msg: message }: { msg: ChatMessage }) {
-	const isLuuk = message.from === "luuk";
-	const time = formatTime(message.timestamp);
-
-	return (
-		<li
-			className={`flex flex-col list-none ${isLuuk ? "items-start" : "items-end"}`}
-		>
-			<div className="relative max-w-[60%]">
-				<p
-					className={`text-xs tracking-wide lowercase leading-relaxed border px-2.5 py-1.5 md:px-3 ${
-						isLuuk
-							? "chat-bubble--received border-current/15 opacity-75"
-							: "chat-bubble--sent border-current/10 opacity-90"
-					}`}
-					style={{
-						borderRadius: "1rem",
-						...(isLuuk
-							? { borderBottomLeftRadius: 0 }
-							: { borderBottomRightRadius: 0 }),
-					}}
-				>
-					{isLuuk && <span className="opacity-65">luuk: </span>}
-					{message.text}
-				</p>
-			</div>
-			<span className="text-[10px] tracking-wide lowercase mt-0.5 px-1 flex items-center gap-1">
-				{isLuuk ? (
-					<span className="opacity-45">{`received${time ? ` · ${time}` : ""}`}</span>
-				) : (
-					<>
-						<span className="opacity-45">{time || "sent"}</span>
-						<img
-							src="/checkmarks.png"
-							alt=""
-							className="checkmarks h-3.25 w-auto inline-block"
-							style={
-								message.read
-									? {
-											filter:
-												"invert(40%) sepia(100%) saturate(1500%) hue-rotate(115deg) brightness(110%) contrast(110%)",
-										}
-									: { opacity: 0.3 }
-							}
-						/>
-					</>
-				)}
-			</span>
-		</li>
-	);
-}
+import { ChatBubble } from "./components/ChatBubble";
+import {
+	COLLAPSE_TRANSITION_DURATION,
+	FIRST_SEND_COLLAPSE_DELAY,
+	SUBSEQUENT_COLLAPSE_DELAY,
+	TYPEWRITER_DELAY,
+} from "./constants/animation";
+import { useChat } from "./hooks/useChat";
 
 export function Chat({
 	placeholder,
@@ -86,13 +33,15 @@ export function Chat({
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const labelRef = useRef<HTMLLabelElement>(null);
 	const gridRef = useRef<HTMLDivElement>(null);
-	const prevGridSizeRef = useRef<{ w: number; h: number } | null>(null);
+	const prevGridSizeRef = useRef<{ width: number; height: number } | null>(
+		null,
+	);
 	const pendingFlipLeft = useRef<number | null>(null);
 	// Two-step animation guards: both must be true before the new input reveals
 	const flipDoneRef = useRef(true);
 	const msgDoneRef = useRef(true);
 	const waitingForConfirmation = useRef(false);
-	const prevDisplayLenRef = useRef(0);
+	const prevDisplayLengthRef = useRef(0);
 	const [typedPlaceholder, setTypedPlaceholder] = useState(placeholder);
 	const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isFirstPlaceholderRender = useRef(true);
@@ -101,55 +50,58 @@ export function Chat({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: input and inputFocused drive DOM changes we measure imperatively — they are not read as JS values but trigger the right re-runs
 	useLayoutEffect(() => {
-		const el = gridRef.current;
-		if (!el) return;
+		const element = gridRef.current;
+		if (!element) return;
 
 		// Cancel any in-flight animation and measure the new natural dimensions.
-		el.style.transition = "none";
-		el.style.width = "";
-		el.style.height = "";
-		const newW = el.offsetWidth;
-		const newH = el.scrollHeight;
+		element.style.transition = "none";
+		element.style.width = "";
+		element.style.height = "";
+		const newWidth = element.offsetWidth;
+		const newHeight = element.scrollHeight;
 
-		const prev = prevGridSizeRef.current;
-		prevGridSizeRef.current = { w: newW, h: newH };
+		const previous = prevGridSizeRef.current;
+		prevGridSizeRef.current = { width: newWidth, height: newHeight };
 
-		if (prev === null) {
-			void el.offsetHeight;
+		if (previous === null) {
+			void element.offsetHeight;
 			return;
 		}
 
-		const wChanged = prev.w !== newW;
-		const hChanged = prev.h !== newH;
+		const widthChanged = previous.width !== newWidth;
+		const heightChanged = previous.height !== newHeight;
 
-		if (!wChanged && !hChanged) {
-			void el.offsetHeight;
+		if (!widthChanged && !heightChanged) {
+			void element.offsetHeight;
 			return;
 		}
 
 		// FLIP: pin at old dimensions, force reflow, then let CSS transition to new.
-		if (wChanged) el.style.width = `${prev.w}px`;
-		if (hChanged) el.style.height = `${prev.h}px`;
-		void el.offsetHeight;
+		if (widthChanged) element.style.width = `${previous.width}px`;
+		if (heightChanged) element.style.height = `${previous.height}px`;
+		void element.offsetHeight;
 
-		const props = [wChanged && "width", hChanged && "height"]
+		const transitionProperties = [
+			widthChanged && "width",
+			heightChanged && "height",
+		]
 			.filter(Boolean)
-			.map((p) => `${p} 0.2s ease-in-out`)
+			.map((property) => `${property} 0.2s ease-in-out`)
 			.join(", ");
-		el.style.transition = props;
-		if (wChanged) el.style.width = `${newW}px`;
-		if (hChanged) el.style.height = `${newH}px`;
+		element.style.transition = transitionProperties;
+		if (widthChanged) element.style.width = `${newWidth}px`;
+		if (heightChanged) element.style.height = `${newHeight}px`;
 
 		let fired = 0;
-		const expected = (wChanged ? 1 : 0) + (hChanged ? 1 : 0);
+		const expected = (widthChanged ? 1 : 0) + (heightChanged ? 1 : 0);
 		const onDone = () => {
 			if (++fired < expected) return;
-			el.style.transition = "";
-			el.style.width = "";
-			el.style.height = "";
+			element.style.transition = "";
+			element.style.width = "";
+			element.style.height = "";
 		};
-		el.addEventListener("transitionend", onDone);
-		return () => el.removeEventListener("transitionend", onDone);
+		element.addEventListener("transitionend", onDone);
+		return () => element.removeEventListener("transitionend", onDone);
 	}, [input, inputFocused]);
 
 	const display = messages;
@@ -165,7 +117,7 @@ export function Chat({
 	useEffect(() => {
 		if (!hasHistory) return;
 		setHasSentMessage(true);
-		prevDisplayLenRef.current = messages.length;
+		prevDisplayLengthRef.current = messages.length;
 		if (newMessageCount > 0) {
 			dividerIndexRef.current = messages.length - newMessageCount;
 			setShowDivider(true);
@@ -184,9 +136,10 @@ export function Chat({
 			setTypedPlaceholder(placeholder.slice(0, i + 1));
 			i++;
 			if (i < placeholder.length) {
-				typewriterRef.current = setTimeout(type, 50);
+				typewriterRef.current = setTimeout(type, TYPEWRITER_DELAY);
 			}
 		};
+
 		typewriterRef.current = setTimeout(type, 0);
 		return () => {
 			if (typewriterRef.current) clearTimeout(typewriterRef.current);
@@ -237,8 +190,8 @@ export function Chat({
 	// Step 2 gate: fires when a new message lands in the conversation.
 	useEffect(() => {
 		if (!waitingForConfirmation.current) return;
-		if (display.length <= prevDisplayLenRef.current) return;
-		prevDisplayLenRef.current = display.length;
+		if (display.length <= prevDisplayLengthRef.current) return;
+		prevDisplayLengthRef.current = display.length;
 		msgDoneRef.current = true;
 		maybeReveal();
 	}, [display.length, maybeReveal]);
@@ -267,14 +220,16 @@ export function Chat({
 		// Step 1 ends: collapse the input after the slide finishes.
 		// For the first send we wait for the FLIP (≈550 ms); subsequent sends
 		// collapse quickly since the bubble is already on the right.
-		const collapseDelay = isFirst ? 570 : 40;
+		const collapseDelay = isFirst
+			? FIRST_SEND_COLLAPSE_DELAY
+			: SUBSEQUENT_COLLAPSE_DELAY;
 		setTimeout(() => {
 			setInputHidden(true);
 			// Allow the collapse transition to complete, then open step-2 gate.
 			setTimeout(() => {
 				flipDoneRef.current = true;
 				maybeReveal();
-			}, 200);
+			}, COLLAPSE_TRANSITION_DURATION);
 		}, collapseDelay);
 	}
 
@@ -342,7 +297,7 @@ export function Chat({
 										<span className="flex-1 border-t border-current/15" />
 									</li>
 								)}
-								<Bubble msg={message} />
+								<ChatBubble message={message} />
 							</Fragment>
 						))}
 
@@ -386,12 +341,12 @@ export function Chat({
 											placeholder={
 												hasSentMessage || inputFocused ? "" : placeholder
 											}
-											onChange={(events) => setInput(events.target.value)}
+											onChange={(event) => setInput(event.target.value)}
 											onFocus={() => setInputFocused(true)}
 											onBlur={() => setInputFocused(false)}
-											onKeyDown={(events) => {
-												if (events.key === "Enter" && !events.shiftKey) {
-													events.preventDefault();
+											onKeyDown={(event) => {
+												if (event.key === "Enter" && !event.shiftKey) {
+													event.preventDefault();
 													sendMessage(input);
 												}
 											}}
