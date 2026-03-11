@@ -97,6 +97,7 @@ export default function App() {
 	const [contrastRotation, setContrastRotation] = useState(0);
 	const [now, setNow] = useState(Date.now());
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
 	const [chatStarted, setChatStarted] = useState(false);
 	const [pillHeaderHeight, setPillHeaderHeight] = useState(0);
 	const pillFromYRef = useRef(0);
@@ -137,6 +138,22 @@ export default function App() {
 	}, [chatStarted]);
 
 	const deviceItems = getDeviceItems(deviceInfo, deviceNames, lastSeen, now);
+	const visibleDeviceItems = deviceItems.filter(
+		(item) => !dismissedKeys.has(item.key),
+	);
+
+	function dismissPill(key: string) {
+		const next = new Set(dismissedKeys);
+		next.add(key);
+		const remaining = deviceItems.filter((d) => !next.has(d.key));
+		if (remaining.length === 0) {
+			setIsExpanded(false);
+			setDismissedKeys(new Set());
+		} else {
+			setDismissedKeys(next);
+		}
+	}
+
 	const statusColor =
 		statusColors[dark ? "dark" : "light"][status as StatusColorKey] ??
 		"inherit";
@@ -162,7 +179,10 @@ export default function App() {
 									: ""
 							}`}
 							aria-expanded={deviceItems.length > 0 ? isExpanded : undefined}
-							onClick={() => setIsExpanded((expanded) => !expanded)}
+							onClick={() => {
+								if (!isExpanded) setDismissedKeys(new Set());
+								setIsExpanded((expanded) => !expanded);
+							}}
 						>
 							<span className="opacity-65">luuk is</span>
 							<span
@@ -189,13 +209,13 @@ export default function App() {
 					>
 						<div className="min-h-0 overflow-hidden">
 							<div className="flex justify-center pt-3 pb-2">
-								<div className="relative inline-flex flex-col items-center gap-2">
+								<div className="inline-flex flex-col items-center gap-2">
 									<AnimatePresence>
 										{isExpanded &&
-											deviceItems.map((item, index) => (
-												<motion.span
+											visibleDeviceItems.map((item, index) => (
+												<motion.div
 													key={item.key}
-													className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full"
+													className="relative"
 													initial={{ opacity: 0, scale: 0.8, y: -10 }}
 													animate={{ opacity: 1, scale: 1, y: 0 }}
 													exit={{
@@ -214,30 +234,11 @@ export default function App() {
 														ease: [0.22, 1, 0.36, 1],
 													}}
 												>
-													{item.pillText}
-												</motion.span>
+													<span className="device-pill inline-flex items-center px-4 py-1 text-xs font-light tracking-widest lowercase whitespace-nowrap rounded-full">
+														{item.pillText}
+													</span>
+												</motion.div>
 											))}
-									</AnimatePresence>
-									<AnimatePresence>
-										{isExpanded && (
-											<motion.button
-												key="dismiss"
-												type="button"
-												aria-label="Close"
-												className="dismiss-pill absolute -top-2 -right-2"
-												initial={{ opacity: 0, scale: 0.5 }}
-												animate={{ opacity: 1, scale: 1 }}
-												exit={{ opacity: 0, scale: 0.5 }}
-												transition={{
-													delay: deviceItems.length * 0.08,
-													duration: 0.3,
-													ease: [0.22, 1, 0.36, 1],
-												}}
-												onClick={() => setIsExpanded(false)}
-											>
-												×
-											</motion.button>
-										)}
 									</AnimatePresence>
 								</div>
 							</div>
