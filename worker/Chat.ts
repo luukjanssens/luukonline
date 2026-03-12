@@ -225,6 +225,27 @@ export class Chat extends DurableObject<ChatEnv> {
 			const text = telegramMessage.text.trim();
 
 			// Standalone commands (no reply needed)
+			if (text === "/help") {
+				await this.sendTelegram(
+					[
+						"📖 Commands:",
+						"",
+						"Reply to a visitor message:",
+						"  /block — block that session",
+						"  /block ip — block session + their IP",
+						"  /unblock — unblock that session",
+						"  /location — request visitor's location",
+						"  (any text) — reply to visitor",
+						"",
+						"Standalone:",
+						"  /blocklist — list all active blocks",
+						"  /unblock {sessionId} — unblock by ID",
+						"  /unblockip {ip} — unblock an IP",
+						"  /help — show this message",
+					].join("\n"),
+				);
+				return;
+			}
 			if (text === "/blocklist") {
 				await this.handleBlocklistCommand();
 				return;

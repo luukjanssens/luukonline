@@ -12,14 +12,14 @@ export interface ChatMessage {
 }
 
 export interface UseChatResult {
-		messages: ChatMessage[];
-		connected: boolean;
-		send: (text: string) => void;
-		hasHistory: boolean;
-		newMessageCount: number;
-		blocked: boolean;
-		rateLimited: boolean;
-	}
+	messages: ChatMessage[];
+	connected: boolean;
+	send: (text: string) => void;
+	hasHistory: boolean;
+	newMessageCount: number;
+	blocked: boolean;
+	rateLimited: boolean;
+}
 
 const RECONNECT_DELAY = 3000;
 
