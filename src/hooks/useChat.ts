@@ -12,12 +12,14 @@ export interface ChatMessage {
 }
 
 export interface UseChatResult {
-	messages: ChatMessage[];
-	connected: boolean;
-	send: (text: string) => void;
-	hasHistory: boolean;
-	newMessageCount: number;
-}
+		messages: ChatMessage[];
+		connected: boolean;
+		send: (text: string) => void;
+		hasHistory: boolean;
+		newMessageCount: number;
+		blocked: boolean;
+		rateLimited: boolean;
+	}
 
 const RECONNECT_DELAY = 3000;
 
@@ -26,8 +28,11 @@ export function useChat(): UseChatResult {
 	const [connected, setConnected] = useState(false);
 	const [hasHistory, setHasHistory] = useState(false);
 	const [newMessageCount, setNewMessageCount] = useState(0);
+	const [blocked, setBlocked] = useState(false);
+	const [rateLimited, setRateLimited] = useState(false);
 	const socketRef = useRef<WebSocket | null>(null);
 	const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const rateLimitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
 		const url = getWsUrl("/chat");
@@ -96,6 +101,15 @@ export function useChat(): UseChatResult {
 					});
 				}
 
+				if (data.type === "rate_limited") {
+					setRateLimited(true);
+					if (rateLimitTimer.current) clearTimeout(rateLimitTimer.current);
+					rateLimitTimer.current = setTimeout(
+						() => setRateLimited(false),
+						2000,
+					);
+				}
+
 				if (data.type === "location_request") {
 					navigator.geolocation?.getCurrentPosition(
 						(position) => {
@@ -128,9 +142,13 @@ export function useChat(): UseChatResult {
 				}
 			};
 
-			socket.onclose = () => {
+			socket.onclose = (event: CloseEvent) => {
 				localStorage.setItem("chat_last_seen_at", String(Date.now()));
 				setConnected(false);
+				if (event.code === 4403) {
+					setBlocked(true);
+					return;
+				}
 				reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY);
 			};
 
@@ -141,6 +159,7 @@ export function useChat(): UseChatResult {
 
 		return () => {
 			if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+			if (rateLimitTimer.current) clearTimeout(rateLimitTimer.current);
 			socketRef.current?.close();
 		};
 	}, []);
@@ -152,5 +171,13 @@ export function useChat(): UseChatResult {
 		}
 	}, []);
 
-	return { messages, connected, send, hasHistory, newMessageCount };
+	return {
+		messages,
+		connected,
+		send,
+		hasHistory,
+		newMessageCount,
+		blocked,
+		rateLimited,
+	};
 }

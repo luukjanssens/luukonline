@@ -23,7 +23,15 @@ export function Chat({
 	placeholder: string;
 	onChatStart?: () => void;
 }) {
-	const { messages, connected, send, hasHistory, newMessageCount } = useChat();
+	const {
+		messages,
+		connected,
+		send,
+		hasHistory,
+		newMessageCount,
+		blocked,
+		rateLimited,
+	} = useChat();
 	const [input, setInput] = useState("");
 	const [hasSentMessage, setHasSentMessage] = useState(false);
 	const [inputHidden, setInputHidden] = useState(false);
@@ -197,7 +205,7 @@ export function Chat({
 	}, [display.length, maybeReveal]);
 
 	function sendMessage(text: string) {
-		if (!text.trim() || !connected) return;
+		if (!text.trim() || !connected || blocked || rateLimited) return;
 		setShowDivider(false);
 		const isFirst = !hasSentMessage;
 
@@ -338,6 +346,7 @@ export function Chat({
 										<textarea
 											ref={inputRef}
 											value={input}
+											disabled={blocked}
 											placeholder={
 												hasSentMessage || inputFocused ? "" : placeholder
 											}
