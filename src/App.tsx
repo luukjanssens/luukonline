@@ -19,8 +19,7 @@ import {
 	type LastSeen,
 	useOnlineStatus,
 } from "./hooks/useOnlineStatus";
-import { formatDuration } from "./utils/formatDuration";
-import { formatLastSeen } from "./utils/formatLastSeen";
+import { formatDuration, formatLastSeen } from "./utils";
 
 function getDeviceItems(
 	deviceInfo: DeviceInfo[],

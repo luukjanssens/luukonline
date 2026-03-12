@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateMessageId } from "../utils/generateMessageId";
-import { getOrCreateSessionId } from "../utils/sessionId";
-import { getChatWsUrl } from "../utils/ws";
+import { generateMessageId, getOrCreateSessionId, getWsUrl } from "../utils";
 
 export interface ChatMessage {
 	id: string;
@@ -35,11 +33,11 @@ export function useChat(): UseChatResult {
 	const rateLimitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
-		const url = getChatWsUrl();
+		const chatUrl = getWsUrl("/chat");
 
 		function connect() {
 			const socket = new WebSocket(
-				`${url}?sessionId=${getOrCreateSessionId()}`,
+				`${chatUrl}?sessionId=${getOrCreateSessionId()}`,
 			);
 			socketRef.current = socket;
 

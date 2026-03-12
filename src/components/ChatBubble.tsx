@@ -1,5 +1,5 @@
 import type { ChatMessage } from "../hooks/useChat";
-import { formatTime } from "../utils/formatTime";
+import { formatTime } from "../utils";
 
 export function ChatBubble({ message }: { message: ChatMessage }) {
 	const isLuuk = message.from === "luuk";
