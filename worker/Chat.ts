@@ -1,4 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
+import { sendTelegramMessage } from "./telegram";
+import {
+	extractVisitorMetadata,
+	formatMetadataLines,
+	type VisitorMetadata,
+} from "./visitorMetadata";
 
 interface ChatEnv {
 	TELEGRAM_BOT_TOKEN: string;
@@ -18,26 +24,6 @@ interface TelegramUpdate {
 		text?: string;
 		reply_to_message?: { message_id?: number };
 	};
-}
-
-interface TelegramSendResult {
-	ok: boolean;
-	result?: { message_id: number };
-}
-
-interface VisitorMeta {
-	ip: string | null;
-	country: string | null;
-	city: string | null;
-	region: string | null;
-	postalCode: string | null;
-	lat: string | null;
-	lon: string | null;
-	timezone: string | null;
-	org: string | null;
-	ua: string | null;
-	lang: string | null;
-	referer: string | null;
 }
 
 interface HistoryEntry {
@@ -66,22 +52,8 @@ export class Chat extends DurableObject<ChatEnv> {
 			const rawId = url.searchParams.get("sessionId") ?? "";
 			const sessionId = UUID_V4.test(rawId) ? rawId : crypto.randomUUID();
 
-			const cf = request.cf;
-			const meta: VisitorMeta = {
-				ip: request.headers.get("CF-Connecting-IP"),
-				country: (cf?.country as string) ?? null,
-				city: (cf?.city as string) ?? null,
-				region: (cf?.region as string) ?? null,
-				postalCode: (cf?.postalCode as string) ?? null,
-				lat: (cf?.latitude as string) ?? null,
-				lon: (cf?.longitude as string) ?? null,
-				timezone: (cf?.timezone as string) ?? null,
-				org: (cf?.asOrganization as string) ?? null,
-				ua: request.headers.get("User-Agent"),
-				lang: request.headers.get("Accept-Language"),
-				referer: request.headers.get("Referer"),
-			};
-			await this.ctx.storage.put(`meta:${sessionId}`, meta);
+			const visitorMetadata = extractVisitorMetadata(request);
+			await this.ctx.storage.put(`meta:${sessionId}`, visitorMetadata);
 
 			this.ctx.acceptWebSocket(server, ["visitor", sessionId]);
 
@@ -142,16 +114,10 @@ export class Chat extends DurableObject<ChatEnv> {
 		}
 
 		if (data.type === "location_denied") {
-			await fetch(
-				`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						chat_id: this.env.TELEGRAM_CHAT_ID,
-						text: `🚫 [${sessionId}] Location denied`,
-					}),
-				},
+			await sendTelegramMessage(
+				this.env.TELEGRAM_BOT_TOKEN,
+				this.env.TELEGRAM_CHAT_ID,
+				`🚫 [${sessionId}] Location denied`,
 			);
 			return;
 		}
@@ -159,16 +125,10 @@ export class Chat extends DurableObject<ChatEnv> {
 		if (data.type === "location" && data.lat != null && data.lon != null) {
 			const accuracy = data.accuracy ? ` (±${Math.round(data.accuracy)}m)` : "";
 			const mapsLink = `https://maps.google.com/?q=${data.lat},${data.lon}`;
-			await fetch(
-				`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						chat_id: this.env.TELEGRAM_CHAT_ID,
-						text: `📍 [${sessionId}] Location${accuracy}\n${mapsLink}`,
-					}),
-				},
+			await sendTelegramMessage(
+				this.env.TELEGRAM_BOT_TOKEN,
+				this.env.TELEGRAM_CHAT_ID,
+				`📍 [${sessionId}] Location${accuracy}\n${mapsLink}`,
 			);
 			return;
 		}
@@ -177,7 +137,7 @@ export class Chat extends DurableObject<ChatEnv> {
 
 		const text = data.text.trim().slice(0, 500);
 
-		const ts = Date.now();
+		const timestamp = Date.now();
 
 		// Echo back to visitor immediately
 		socket.send(
@@ -185,46 +145,29 @@ export class Chat extends DurableObject<ChatEnv> {
 				type: "message",
 				from: "visitor",
 				text,
-				timestamp: ts,
+				timestamp,
 			}),
 		);
 
 		await this.appendToHistory(sessionId, {
 			from: "visitor",
 			text,
-			timestamp: ts,
+			timestamp,
 		});
 
-		const meta = await this.ctx.storage.get<VisitorMeta>(`meta:${sessionId}`);
-		const location = [meta?.city, meta?.postalCode, meta?.region, meta?.country]
-			.filter(Boolean)
-			.join(", ");
-		const metaLines = [
-			location && `🌍 ${location}`,
-			meta?.timezone && `🕐 ${meta.timezone}`,
-			meta?.org && `📡 ${meta.org}`,
-			meta?.ip && `🔗 ${meta.ip}`,
-			meta?.referer && `↩️ ${meta.referer}`,
-			meta?.lang && `🗣️ ${meta.lang}`,
-			meta?.ua && `🖥️ ${meta.ua}`,
-		]
-			.filter(Boolean)
-			.join("\n");
+		const visitorMetadata = await this.ctx.storage.get<VisitorMetadata>(
+			`meta:${sessionId}`,
+		);
+		const metadataLines = visitorMetadata
+			? formatMetadataLines(visitorMetadata)
+			: "";
 
 		// Forward to Telegram
-		const resp = await fetch(
-			`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: this.env.TELEGRAM_CHAT_ID,
-					text: `💬 [${sessionId}]\n${text}${metaLines ? `\n\n${metaLines}` : ""}`,
-				}),
-			},
+		const result = await sendTelegramMessage(
+			this.env.TELEGRAM_BOT_TOKEN,
+			this.env.TELEGRAM_CHAT_ID,
+			`💬 [${sessionId}]\n${text}${metadataLines ? `\n\n${metadataLines}` : ""}`,
 		);
-
-		const result = (await resp.json()) as TelegramSendResult;
 		if (result.ok && result.result?.message_id) {
 			// Store telegram message_id → sessionId so replies can be routed back
 			await this.ctx.storage.put(`msg:${result.result.message_id}`, sessionId);
@@ -232,43 +175,44 @@ export class Chat extends DurableObject<ChatEnv> {
 	}
 
 	private async handleTelegramWebhook(update: TelegramUpdate): Promise<void> {
-		const msg = update.message;
-		if (!msg?.text || !msg.reply_to_message?.message_id) return;
+		const telegramMessage = update.message;
+		if (!telegramMessage?.text || !telegramMessage.reply_to_message?.message_id)
+			return;
 
 		// Look up which visitor session this reply belongs to
 		const sessionId = await this.ctx.storage.get<string>(
-			`msg:${msg.reply_to_message.message_id}`,
+			`msg:${telegramMessage.reply_to_message.message_id}`,
 		);
 		if (!sessionId) return;
 
-		if (msg.text === "/location") {
+		if (telegramMessage.text === "/location") {
 			// Location requests are only meaningful if the visitor is currently connected
 			const socket = this.ctx
 				.getWebSockets("visitor")
-				.find((s) => this.ctx.getTags(s)[1] === sessionId);
+				.find((candidate) => this.ctx.getTags(candidate)[1] === sessionId);
 			if (socket) socket.send(JSON.stringify({ type: "location_request" }));
 			return;
 		}
 
-		const ts = Date.now();
+		const timestamp = Date.now();
 		// Always persist to history so offline visitors see it on reconnect
 		await this.appendToHistory(sessionId, {
 			from: "luuk",
-			text: msg.text,
-			timestamp: ts,
+			text: telegramMessage.text,
+			timestamp,
 		});
 
 		// Live-deliver only if the visitor is currently connected
 		const socket = this.ctx
 			.getWebSockets("visitor")
-			.find((s) => this.ctx.getTags(s)[1] === sessionId);
+			.find((candidate) => this.ctx.getTags(candidate)[1] === sessionId);
 		if (socket) {
 			socket.send(
 				JSON.stringify({
 					type: "message",
 					from: "luuk",
-					text: msg.text,
-					timestamp: ts,
+					text: telegramMessage.text,
+					timestamp,
 				}),
 			);
 		}

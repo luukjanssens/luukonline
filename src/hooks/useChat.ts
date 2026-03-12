@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { generateMessageId } from "../utils/generateMessageId";
+import { getOrCreateSessionId } from "../utils/sessionId";
 import { getWsUrl } from "../utils/ws";
-
-function getOrCreateSessionId(): string {
-	const key = "chat_session_id";
-	const existing = localStorage.getItem(key);
-	if (existing) return existing;
-	const id = crypto.randomUUID();
-	localStorage.setItem(key, id);
-	return id;
-}
 
 export interface ChatMessage {
 	id: string;
@@ -26,6 +19,8 @@ export interface UseChatResult {
 	newMessageCount: number;
 }
 
+const RECONNECT_DELAY = 3000;
+
 export function useChat(): UseChatResult {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [connected, setConnected] = useState(false);
@@ -38,13 +33,15 @@ export function useChat(): UseChatResult {
 		const url = getWsUrl("/chat");
 
 		function connect() {
-			const ws = new WebSocket(`${url}?sessionId=${getOrCreateSessionId()}`);
-			socketRef.current = ws;
+			const socket = new WebSocket(
+				`${url}?sessionId=${getOrCreateSessionId()}`,
+			);
+			socketRef.current = socket;
 
-			ws.onopen = () => setConnected(true);
+			socket.onopen = () => setConnected(true);
 
-			ws.onmessage = (e: MessageEvent) => {
-				const data = JSON.parse(e.data as string) as {
+			socket.onmessage = (event: MessageEvent) => {
+				const data = JSON.parse(event.data as string) as {
 					type: string;
 					from?: "visitor" | "luuk";
 					text?: string;
@@ -57,39 +54,40 @@ export function useChat(): UseChatResult {
 				};
 
 				if (data.type === "history" && data.messages) {
-					const lastSeen = Number(
+					const lastSeenTimestamp = Number(
 						localStorage.getItem("chat_last_seen_at") ?? "0",
 					);
 					const mapped: ChatMessage[] = data.messages.map((entry) => ({
-						id: `hist-${entry.timestamp}-${Math.random()}`,
+						id: `hist-${generateMessageId(entry.timestamp)}`,
 						from: entry.from,
 						text: entry.text,
 						timestamp: entry.timestamp,
 						read: true,
 					}));
-					const newCount = data.messages.filter(
-						(entry) => entry.from === "luuk" && entry.timestamp > lastSeen,
+					const unseenCount = data.messages.filter(
+						(entry) =>
+							entry.from === "luuk" && entry.timestamp > lastSeenTimestamp,
 					).length;
 					setMessages(mapped);
 					setHasHistory(true);
-					setNewMessageCount(newCount);
+					setNewMessageCount(unseenCount);
 				}
 
 				if (data.type === "message" && data.from && data.text) {
 					const { from, text, timestamp } = data;
-					setMessages((prev) => {
+					setMessages((previousMessages) => {
 						const updated =
 							from === "luuk"
-								? prev.map((message) =>
+								? previousMessages.map((message) =>
 										message.from === "visitor"
 											? { ...message, read: true }
 											: message,
 									)
-								: prev;
+								: previousMessages;
 						return [
 							...updated,
 							{
-								id: `${timestamp ?? Date.now()}-${Math.random()}`,
+								id: generateMessageId(timestamp ?? Date.now()),
 								from,
 								text,
 								timestamp: timestamp ?? Date.now(),
@@ -100,18 +98,18 @@ export function useChat(): UseChatResult {
 
 				if (data.type === "location_request") {
 					navigator.geolocation?.getCurrentPosition(
-						(pos) => {
-							if (ws.readyState === WebSocket.OPEN) {
-								ws.send(
+						(position) => {
+							if (socket.readyState === WebSocket.OPEN) {
+								socket.send(
 									JSON.stringify({
 										type: "location",
-										lat: pos.coords.latitude,
-										lon: pos.coords.longitude,
-										accuracy: pos.coords.accuracy,
+										lat: position.coords.latitude,
+										lon: position.coords.longitude,
+										accuracy: position.coords.accuracy,
 									}),
 								);
-								setMessages((prev) => [
-									...prev,
+								setMessages((previousMessages) => [
+									...previousMessages,
 									{
 										id: `${Date.now()}-location`,
 										from: "visitor" as const,
@@ -122,21 +120,21 @@ export function useChat(): UseChatResult {
 							}
 						},
 						() => {
-							if (ws.readyState === WebSocket.OPEN) {
-								ws.send(JSON.stringify({ type: "location_denied" }));
+							if (socket.readyState === WebSocket.OPEN) {
+								socket.send(JSON.stringify({ type: "location_denied" }));
 							}
 						},
 					);
 				}
 			};
 
-			ws.onclose = () => {
+			socket.onclose = () => {
 				localStorage.setItem("chat_last_seen_at", String(Date.now()));
 				setConnected(false);
-				reconnectTimer.current = setTimeout(connect, 3000);
+				reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY);
 			};
 
-			ws.onerror = () => ws.close();
+			socket.onerror = () => socket.close();
 		}
 
 		connect();
@@ -148,9 +146,9 @@ export function useChat(): UseChatResult {
 	}, []);
 
 	const send = useCallback((text: string) => {
-		const ws = socketRef.current;
-		if (ws?.readyState === WebSocket.OPEN) {
-			ws.send(JSON.stringify({ type: "message", text }));
+		const socket = socketRef.current;
+		if (socket?.readyState === WebSocket.OPEN) {
+			socket.send(JSON.stringify({ type: "message", text }));
 		}
 	}, []);
 

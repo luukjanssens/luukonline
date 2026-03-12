@@ -22,7 +22,7 @@ export class OnlineStatus extends DurableObject {
 			return new Response("Expected WebSocket", { status: 426 });
 		}
 
-		const { 0: clientWs, 1: serverWs } = new WebSocketPair();
+		const { 0: clientSocket, 1: serverSocket } = new WebSocketPair();
 
 		// For device connections, include the name and connect timestamp as extra tags
 		const tags = isDevice
@@ -32,11 +32,11 @@ export class OnlineStatus extends DurableObject {
 					Date.now().toString(),
 				]
 			: ["browser"];
-		this.ctx.acceptWebSocket(serverWs, tags);
+		this.ctx.acceptWebSocket(serverSocket, tags);
 
 		// Send current status immediately to new browser connections
 		if (isBrowser) {
-			this.ctx.waitUntil(this.sendStatus(serverWs));
+			this.ctx.waitUntil(this.sendStatus(serverSocket));
 		}
 
 		// Notify browsers when a new device connects
@@ -44,7 +44,7 @@ export class OnlineStatus extends DurableObject {
 			this.ctx.waitUntil(this.broadcastStatus());
 		}
 
-		return new Response(null, { status: 101, webSocket: clientWs });
+		return new Response(null, { status: 101, webSocket: clientSocket });
 	}
 
 	webSocketClose(

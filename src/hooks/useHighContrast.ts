@@ -14,5 +14,8 @@ export function useHighContrast(): [boolean, () => void] {
 		localStorage.setItem("high-contrast", String(highContrast));
 	}, [highContrast]);
 
-	return [highContrast, () => setHighContrast((v) => !v)];
+	return [
+		highContrast,
+		() => setHighContrast((isHighContrast) => !isHighContrast),
+	];
 }

@@ -38,13 +38,13 @@ function connect(): void {
 	const socket = new WebSocket(WS_URL);
 	activeSocket = socket;
 	let pingTimer: ReturnType<typeof setInterval> | null = null;
-	let pongTimer: ReturnType<typeof setTimeout> | null = null;
+	let pongTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function stopTimers() {
 		if (pingTimer) clearInterval(pingTimer);
-		if (pongTimer) clearTimeout(pongTimer);
+		if (pongTimeoutTimer) clearTimeout(pongTimeoutTimer);
 		pingTimer = null;
-		pongTimer = null;
+		pongTimeoutTimer = null;
 	}
 
 	socket.on("open", () => {
@@ -53,7 +53,7 @@ function connect(): void {
 		pingTimer = setInterval(() => {
 			if (socket.readyState !== WebSocket.OPEN) return;
 			socket.ping();
-			pongTimer = setTimeout(() => {
+			pongTimeoutTimer = setTimeout(() => {
 				console.warn(`${timestamp()} [laptop] Pong timeout — reconnecting...`);
 				socket.terminate();
 			}, PONG_TIMEOUT);
@@ -61,8 +61,8 @@ function connect(): void {
 	});
 
 	socket.on("pong", () => {
-		if (pongTimer) clearTimeout(pongTimer);
-		pongTimer = null;
+		if (pongTimeoutTimer) clearTimeout(pongTimeoutTimer);
+		pongTimeoutTimer = null;
 	});
 
 	socket.on("close", () => {
@@ -75,8 +75,8 @@ function connect(): void {
 		setTimeout(connect, RETRY_DELAY);
 	});
 
-	socket.on("error", (err: Error) => {
-		console.error(`${timestamp()} [laptop] Error:`, err.message);
+	socket.on("error", (error: Error) => {
+		console.error(`${timestamp()} [laptop] Error:`, error.message);
 		socket.terminate();
 	});
 }
