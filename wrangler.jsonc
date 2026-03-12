@@ -1,8 +1,13 @@
 {
 	"name": "luukonline",
-	"workers_dev": true,
 	"compatibility_date": "2026-03-06",
 	"main": "./worker/index.ts",
+	"routes": [
+		{
+			"pattern": "luuk.online",
+			"custom_domain": true
+		}
+	],
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"
@@ -28,27 +33,5 @@
 			"tag": "v2",
 			"new_sqlite_classes": ["Chat"]
 		}
-	],
-	"env": {
-		"production": {
-			"routes": [
-				{
-					"pattern": "luuk.online",
-					"custom_domain": true
-				}
-			],
-			"durable_objects": {
-				"bindings": [
-					{
-						"name": "ONLINE_STATUS",
-						"class_name": "OnlineStatus"
-					},
-					{
-						"name": "CHAT",
-						"class_name": "Chat"
-					}
-				]
-			}
-		}
-	}
+	]
 }
