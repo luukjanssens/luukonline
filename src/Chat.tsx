@@ -44,7 +44,8 @@ export function Chat({
 	const prevGridSizeRef = useRef<{ width: number; height: number } | null>(
 		null,
 	);
-	const isAtBottomRef = useRef(true);
+	const wantsAutoScrollRef = useRef(true);
+	const programmaticScrollRef = useRef(false);
 	const pendingFlipLeft = useRef<number | null>(null);
 	// Two-step animation guards: both must be true before the new input reveals
 	const flipDoneRef = useRef(true);
@@ -122,26 +123,39 @@ export function Chat({
 		inputRef.current?.focus();
 	}, []);
 
-	// Track whether the user is scrolled to the bottom
+	// Track whether the user has manually scrolled away from the bottom.
+	// Programmatic scrolls (triggered by us) are ignored.
 	useEffect(() => {
 		const el = scrollRef.current;
 		if (!el) return;
 		const onScroll = () => {
+			if (programmaticScrollRef.current) return;
 			const threshold = 40;
-			isAtBottomRef.current =
+			const atBottom =
 				el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+			wantsAutoScrollRef.current = atBottom;
 		};
 		el.addEventListener("scroll", onScroll, { passive: true });
 		return () => el.removeEventListener("scroll", onScroll);
 	}, []);
 
-	// Auto-scroll to bottom when new messages appear (if user hasn't scrolled up)
-	// biome-ignore lint/correctness/useExhaustiveDependencies: messages.length, inputHidden, and inputEntering are intentional triggers — we scroll whenever the chat content changes
-	useEffect(() => {
+	const scrollToBottom = useCallback(() => {
 		const el = scrollRef.current;
-		if (!el || !isAtBottomRef.current) return;
+		if (!el) return;
+		programmaticScrollRef.current = true;
 		el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-	}, [messages.length, inputHidden, inputEntering]);
+		// Clear the guard after the smooth scroll finishes (or a generous timeout).
+		setTimeout(() => {
+			programmaticScrollRef.current = false;
+		}, 500);
+	}, []);
+
+	// Auto-scroll to bottom when messages change (if user hasn't scrolled up)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: messages.length, inputHidden, and inputEntering are intentional triggers
+	useEffect(() => {
+		if (!wantsAutoScrollRef.current) return;
+		scrollToBottom();
+	}, [messages.length, inputHidden, inputEntering, scrollToBottom]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once when history loads — messages and newMessageCount are populated at that point
 	useEffect(() => {
@@ -246,6 +260,8 @@ export function Chat({
 		send(text.trim());
 		setInput("");
 		inputRef.current?.focus();
+		// Always scroll to bottom when the user sends a message.
+		wantsAutoScrollRef.current = true;
 
 		// Step 1 ends: collapse the input after the slide finishes.
 		// For the first send we wait for the FLIP (≈550 ms); subsequent sends
@@ -314,7 +330,7 @@ export function Chat({
 					<ul
 						role="log"
 						aria-label="chat messages"
-						className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "py-8" : "py-4"}`}
+						className={`flex flex-col gap-1.5 md:gap-2 px-3 md:px-5 ${hasMessages ? "pt-8 pb-12" : "py-4"}`}
 					>
 						{display.map((message, index) => (
 							<Fragment key={message.id}>
