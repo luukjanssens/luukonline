@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { sendTelegramMessage } from "./telegram";
+import { escapeTelegramText, sendTelegramMessage } from "./telegram";
 import {
 	extractVisitorMetadata,
 	formatMetadataLines,
@@ -9,6 +9,7 @@ import {
 interface ChatEnv {
 	TELEGRAM_BOT_TOKEN: string;
 	TELEGRAM_CHAT_ID: string;
+	TELEGRAM_WEBHOOK_SECRET: string;
 }
 
 interface IncomingMessage {
@@ -46,16 +47,47 @@ interface BlockEntry {
 const RATE_LIMIT_WINDOW_MS = 10_000;
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_AUTO_BLOCK_STRIKES = 3;
+const MAX_CONNECTIONS = 50;
+const MAX_CONNECTIONS_PER_IP = 3;
+
+const ALLOWED_ORIGINS = new Set([
+	"https://luuk.online",
+	"http://localhost:5173",
+	"http://localhost:4173",
+]);
+
+function isOriginAllowed(request: Request): boolean {
+	const origin = request.headers.get("Origin");
+	if (!origin) return true; // non-browser clients may not send Origin
+	return ALLOWED_ORIGINS.has(origin);
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	const encoder = new TextEncoder();
+	const bufA = encoder.encode(a);
+	const bufB = encoder.encode(b);
+	return crypto.subtle.timingSafeEqual(bufA, bufB);
+}
 
 export class Chat extends DurableObject<ChatEnv> {
 		private rateLimitMap = new Map<string, number[]>();
 		private rateLimitStrikes = new Map<string, number>();
+		private ipConnectionCount = new Map<string, number>();
 		async fetch(request: Request): Promise<Response> {
 			const url = new URL(request.url);
 
 			if (url.pathname === "/chat") {
 				if (request.headers.get("Upgrade") !== "websocket") {
 					return new Response("Expected WebSocket", { status: 426 });
+				}
+
+				if (!isOriginAllowed(request)) {
+					return new Response("Forbidden", { status: 403 });
+				}
+
+				if (this.ctx.getWebSockets("visitor").length >= MAX_CONNECTIONS) {
+					return new Response("Too many connections", { status: 429 });
 				}
 
 				const { 0: client, 1: server } = new WebSocketPair();
@@ -71,6 +103,16 @@ export class Chat extends DurableObject<ChatEnv> {
 					this.ctx.acceptWebSocket(server, ["visitor", sessionId]);
 					server.close(4403, "blocked");
 					return new Response(null, { status: 101, webSocket: client });
+				}
+
+				if (ip) {
+					const ipCount = this.ipConnectionCount.get(ip) ?? 0;
+					if (ipCount >= MAX_CONNECTIONS_PER_IP) {
+						return new Response("Too many connections from this IP", {
+							status: 429,
+						});
+					}
+					this.ipConnectionCount.set(ip, ipCount + 1);
 				}
 
 				await this.ctx.storage.put(`meta:${sessionId}`, visitorMetadata);
@@ -96,6 +138,17 @@ export class Chat extends DurableObject<ChatEnv> {
 			}
 
 			if (url.pathname === "/telegram-webhook") {
+				if (request.method !== "POST") {
+					return new Response("Method not allowed", { status: 405 });
+				}
+				const secret =
+					request.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
+				if (
+					!this.env.TELEGRAM_WEBHOOK_SECRET ||
+					!timingSafeEqual(secret, this.env.TELEGRAM_WEBHOOK_SECRET)
+				) {
+					return new Response("Forbidden", { status: 403 });
+				}
 				const body = (await request.json()) as TelegramUpdate;
 				await this.handleTelegramWebhook(body);
 				return new Response("ok");
@@ -117,9 +170,23 @@ export class Chat extends DurableObject<ChatEnv> {
 		): void {
 			const sessionId = this.ctx.getTags(socket)[1];
 			if (sessionId) {
-				this.ctx.waitUntil(this.ctx.storage.delete(`meta:${sessionId}`));
 				this.rateLimitMap.delete(sessionId);
 				this.rateLimitStrikes.delete(sessionId);
+				this.ctx.waitUntil(
+					this.ctx.storage
+						.get<VisitorMetadata>(`meta:${sessionId}`)
+						.then((meta) => {
+							if (meta?.ip) {
+								const count = this.ipConnectionCount.get(meta.ip) ?? 1;
+								if (count <= 1) {
+									this.ipConnectionCount.delete(meta.ip);
+								} else {
+									this.ipConnectionCount.set(meta.ip, count - 1);
+								}
+							}
+							return this.ctx.storage.delete(`meta:${sessionId}`);
+						}),
+				);
 			}
 		}
 
@@ -141,6 +208,8 @@ export class Chat extends DurableObject<ChatEnv> {
 				return;
 			}
 
+			if (typeof data.type !== "string") return;
+
 			if (data.type === "location_denied") {
 				await sendTelegramMessage(
 					this.env.TELEGRAM_BOT_TOKEN,
@@ -150,10 +219,15 @@ export class Chat extends DurableObject<ChatEnv> {
 				return;
 			}
 
-			if (data.type === "location" && data.lat != null && data.lon != null) {
-				const accuracy = data.accuracy
-					? ` (±${Math.round(data.accuracy)}m)`
-					: "";
+			if (
+				data.type === "location" &&
+				typeof data.lat === "number" &&
+				typeof data.lon === "number"
+			) {
+				const accuracy =
+					typeof data.accuracy === "number"
+						? ` (±${Math.round(data.accuracy)}m)`
+						: "";
 				const mapsLink = `https://maps.google.com/?q=${data.lat},${data.lon}`;
 				await sendTelegramMessage(
 					this.env.TELEGRAM_BOT_TOKEN,
@@ -163,7 +237,12 @@ export class Chat extends DurableObject<ChatEnv> {
 				return;
 			}
 
-			if (data.type !== "message" || !data.text?.trim()) return;
+			if (
+				data.type !== "message" ||
+				typeof data.text !== "string" ||
+				!data.text.trim()
+			)
+				return;
 
 			if (this.checkRateLimit(sessionId)) {
 				socket.send(JSON.stringify({ type: "rate_limited" }));
@@ -203,11 +282,12 @@ export class Chat extends DurableObject<ChatEnv> {
 				? formatMetadataLines(visitorMetadata)
 				: "";
 
-			// Forward to Telegram
+			// Forward to Telegram (Phase 3: escape visitor text)
+			const escapedText = escapeTelegramText(text);
 			const result = await sendTelegramMessage(
 				this.env.TELEGRAM_BOT_TOKEN,
 				this.env.TELEGRAM_CHAT_ID,
-				`💬 [${sessionId}]\n${text}${metadataLines ? `\n\n${metadataLines}` : ""}`,
+				`💬 [${sessionId}]\n${escapedText}${metadataLines ? `\n\n${metadataLines}` : ""}`,
 			);
 			if (result.ok && result.result?.message_id) {
 				// Store telegram message_id → sessionId so replies can be routed back

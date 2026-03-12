@@ -46,7 +46,7 @@ export function useChat(): UseChatResult {
 			socket.onopen = () => setConnected(true);
 
 			socket.onmessage = (event: MessageEvent) => {
-				const data = JSON.parse(event.data as string) as {
+				let data: {
 					type: string;
 					from?: "visitor" | "luuk";
 					text?: string;
@@ -57,8 +57,14 @@ export function useChat(): UseChatResult {
 						timestamp: number;
 					}>;
 				};
+				try {
+					data = JSON.parse(event.data as string);
+				} catch {
+					return;
+				}
+				if (typeof data?.type !== "string") return;
 
-				if (data.type === "history" && data.messages) {
+				if (data.type === "history" && Array.isArray(data.messages)) {
 					const lastSeenTimestamp = Number(
 						localStorage.getItem("chat_last_seen_at") ?? "0",
 					);

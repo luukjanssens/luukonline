@@ -7,12 +7,6 @@
 		"directory": "./dist",
 		"binding": "ASSETS"
 	},
-	"routes": [
-		{
-			"pattern": "luuk.online",
-			"custom_domain": true
-		}
-	],
 	"durable_objects": {
 		"bindings": [
 			{
@@ -34,5 +28,27 @@
 			"tag": "v2",
 			"new_sqlite_classes": ["Chat"]
 		}
-	]
+	],
+	"env": {
+		"production": {
+			"routes": [
+				{
+					"pattern": "luuk.online",
+					"custom_domain": true
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ONLINE_STATUS",
+						"class_name": "OnlineStatus"
+					},
+					{
+						"name": "CHAT",
+						"class_name": "Chat"
+					}
+				]
+			}
+		}
+	}
 }

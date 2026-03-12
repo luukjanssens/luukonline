@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"deploy": "vite build && wrangler deploy",
+		"deploy": "vite build && wrangler deploy --env production",
+		"deploy:dev": "vite build && wrangler deploy",
 		"lint": "biome check .",
 		"preview": "vite preview",
 		"agent:install": "zsh scripts/install-agent.sh",

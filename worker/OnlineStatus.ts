@@ -1,5 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
 
+const ALLOWED_ORIGINS = new Set([
+	"https://luuk.online",
+	"http://localhost:5173",
+	"http://localhost:4173",
+]);
+
 function normalizeDeviceName(name: string): string {
 	const lower = name.toLowerCase();
 	if (lower.includes("iphone") || lower.includes("phone")) return "phone";
@@ -20,6 +26,13 @@ export class OnlineStatus extends DurableObject {
 		const upgradeHeader = request.headers.get("Upgrade");
 		if (upgradeHeader !== "websocket") {
 			return new Response("Expected WebSocket", { status: 426 });
+		}
+
+		// Browser status connections must come from an allowed origin
+			const origin = request.headers.get("Origin");
+			if (origin && !ALLOWED_ORIGINS.has(origin)) {
+				return new Response("Forbidden", { status: 403 });
+			}
 		}
 
 		const { 0: clientSocket, 1: serverSocket } = new WebSocketPair();

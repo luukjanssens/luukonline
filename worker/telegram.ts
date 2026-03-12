@@ -3,6 +3,11 @@ interface SendMessageOptions {
 	parseMode?: string;
 }
 
+/** Escape special characters for Telegram MarkdownV2 — defensive guard against injection if parse_mode is ever added. */
+export function escapeTelegramText(text: string): string {
+	return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
+}
+
 export async function sendTelegramMessage(
 	botToken: string,
 	chatId: string,
