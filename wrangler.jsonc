@@ -2,6 +2,7 @@
 	"name": "luukonline",
 	"compatibility_date": "2026-03-06",
 	"main": "./worker/index.ts",
+	"workers_dev": false,
 	"routes": [
 		{
 			"pattern": "luuk.online",
