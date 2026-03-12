@@ -16,8 +16,8 @@ console.log(
   luuk.online is forever work in progress —
   like every website, it's never really done.
 
-  got ideas, suggestions, or just want to say hi?
-  HMU →  hi@luukjanssens.nl
+  got ideas, suggestions, or just want to say hallo?
+  HMU →  halloÌ@luukjanssens.nl
 
 `,
 	"color: #a78bfa; font-family: monospace; font-size: 12px;",
