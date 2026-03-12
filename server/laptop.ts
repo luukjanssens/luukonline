@@ -52,7 +52,7 @@ function connect(): void {
 		notify("luuk.online status:", "Online");
 		pingTimer = setInterval(() => {
 			if (socket.readyState !== WebSocket.OPEN) return;
-			socket.ping();
+			socket.send(JSON.stringify({ type: "ping" }));
 			pongTimeoutTimer = setTimeout(() => {
 				console.warn(`${timestamp()} [laptop] Pong timeout — reconnecting...`);
 				socket.terminate();
@@ -60,9 +60,16 @@ function connect(): void {
 		}, PING_INTERVAL);
 	});
 
-	socket.on("pong", () => {
-		if (pongTimeoutTimer) clearTimeout(pongTimeoutTimer);
-		pongTimeoutTimer = null;
+	socket.on("message", (data) => {
+		try {
+			const msg = JSON.parse(data.toString()) as { type?: string };
+			if (msg.type === "pong") {
+				if (pongTimeoutTimer) clearTimeout(pongTimeoutTimer);
+				pongTimeoutTimer = null;
+			}
+		} catch {
+			// ignore non-JSON messages
+		}
 	});
 
 	socket.on("close", () => {

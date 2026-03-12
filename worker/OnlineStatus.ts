@@ -15,124 +15,131 @@ function normalizeDeviceName(name: string): string {
 }
 
 export class OnlineStatus extends DurableObject {
-	async fetch(request: Request): Promise<Response> {
-		const url = new URL(request.url);
-		const isDevice = url.pathname === "/device";
-		const isBrowser = url.pathname === "/status";
+		async fetch(request: Request): Promise<Response> {
+			const url = new URL(request.url);
+			const isDevice = url.pathname === "/device";
+			const isBrowser = url.pathname === "/status";
 
-		if (!isDevice && !isBrowser) {
-			return new Response("Not found", { status: 404 });
+			if (!isDevice && !isBrowser) {
+				return new Response("Not found", { status: 404 });
+			}
+
+			const upgradeHeader = request.headers.get("Upgrade");
+			if (upgradeHeader !== "websocket") {
+				return new Response("Expected WebSocket", { status: 426 });
+			}
+
+			// Browser status connections must come from an allowed origin
+			const origin = request.headers.get("Origin");
+			if (origin && !ALLOWED_ORIGINS.has(origin)) {
+				return new Response("Forbidden", { status: 403 });
+			}
+
+			const wsPair = new WebSocketPair();
+			const clientSocket = wsPair[0];
+			const serverSocket = wsPair[1];
+
+			// For device connections, include the name and connect timestamp as extra tags
+			const tags = isDevice
+				? [
+						"device",
+						normalizeDeviceName(url.searchParams.get("name") ?? "unknown"),
+						Date.now().toString(),
+					]
+				: ["browser"];
+			this.ctx.acceptWebSocket(serverSocket, tags);
+
+			// Send current status immediately to new browser connections
+			if (isBrowser) {
+				this.ctx.waitUntil(this.sendStatus(serverSocket));
+			}
+
+			// Notify browsers when a new device connects
+			if (isDevice) {
+				this.ctx.waitUntil(this.broadcastStatus());
+			}
+
+			return new Response(null, { status: 101, webSocket: clientSocket });
 		}
 
-		const upgradeHeader = request.headers.get("Upgrade");
-		if (upgradeHeader !== "websocket") {
-			return new Response("Expected WebSocket", { status: 426 });
-		}
-
-		// Browser status connections must come from an allowed origin
-		const origin = request.headers.get("Origin");
-		if (origin && !ALLOWED_ORIGINS.has(origin)) {
-			return new Response("Forbidden", { status: 403 });
-		}
-
-		const wsPair = new WebSocketPair();
-		const clientSocket = wsPair[0];
-		const serverSocket = wsPair[1];
-
-		// For device connections, include the name and connect timestamp as extra tags
-		const tags = isDevice
-			? [
-					"device",
-					normalizeDeviceName(url.searchParams.get("name") ?? "unknown"),
-					Date.now().toString(),
-				]
-			: ["browser"];
-		this.ctx.acceptWebSocket(serverSocket, tags);
-
-		// Send current status immediately to new browser connections
-		if (isBrowser) {
-			this.ctx.waitUntil(this.sendStatus(serverSocket));
-		}
-
-		// Notify browsers when a new device connects
-		if (isDevice) {
-			this.ctx.waitUntil(this.broadcastStatus());
-		}
-
-		return new Response(null, { status: 101, webSocket: clientSocket });
-	}
-
-	webSocketClose(
-		socket: WebSocket,
-		_code: number,
-		_reason: string,
-		_wasClean: boolean,
-	): void {
-		const tags = this.ctx.getTags(socket);
-		if (tags[0] === "device") {
-			this.ctx.waitUntil(
-				this.ctx.storage
-					.put("lastSeen", {
-						timestamp: Date.now(),
-						name: tags[1] ?? "unknown",
-					})
-					.then(() => this.broadcastStatus()),
-			);
-		} else {
-			this.ctx.waitUntil(this.broadcastStatus());
-		}
-	}
-
-	webSocketError(socket: WebSocket, _error: unknown): void {
-		this.webSocketClose(socket, 0, "", false);
-	}
-
-	webSocketMessage(_socket: WebSocket, _message: string | ArrayBuffer): void {
-		// devices don't send messages
-	}
-
-	private currentStatus() {
-		const devices = this.ctx.getWebSockets("device");
-		// Tags: ["device", name, connectedAt]
-		const deviceInfo = devices.map((socket) => {
+		webSocketClose(
+			socket: WebSocket,
+			_code: number,
+			_reason: string,
+			_wasClean: boolean,
+		): void {
 			const tags = this.ctx.getTags(socket);
-			return {
-				name: tags[1] ?? "Unknown",
-				connectedAt: Number(tags[2] ?? "0"),
-			};
-		});
-		const online = devices.length > 0;
-		return {
-			online,
-			devices: devices.length,
-			deviceNames: deviceInfo.map((device) => device.name),
-			deviceInfo,
-			timestamp: Date.now(),
-		};
-	}
+			if (tags[0] === "device") {
+				this.ctx.waitUntil(
+					this.ctx.storage
+						.put("lastSeen", {
+							timestamp: Date.now(),
+							name: tags[1] ?? "unknown",
+						})
+						.then(() => this.broadcastStatus()),
+				);
+			} else {
+				this.ctx.waitUntil(this.broadcastStatus());
+			}
+		}
 
-	private async buildPayload(): Promise<string> {
-		const status = this.currentStatus();
-		const lastSeen = status.online
-			? null
-			: ((await this.ctx.storage.get<{ timestamp: number; name: string }>(
-					"lastSeen",
-				)) ?? null);
-		return JSON.stringify({ ...status, lastSeen });
-	}
+		webSocketError(socket: WebSocket, _error: unknown): void {
+			this.webSocketClose(socket, 0, "", false);
+		}
 
-	private async sendStatus(socket: WebSocket): Promise<void> {
-		try {
-			socket.send(await this.buildPayload());
-		} catch {}
-	}
-
-	private async broadcastStatus(): Promise<void> {
-		const payload = await this.buildPayload();
-		for (const socket of this.ctx.getWebSockets("browser")) {
+		webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): void {
 			try {
-				socket.send(payload);
+				const data = JSON.parse(message as string) as { type?: string };
+				if (data.type === "ping") {
+					socket.send(JSON.stringify({ type: "pong" }));
+				}
+			} catch {
+				// ignore non-JSON or unexpected messages
+			}
+		}
+
+		private currentStatus() {
+			const devices = this.ctx.getWebSockets("device");
+			// Tags: ["device", name, connectedAt]
+			const deviceInfo = devices.map((socket) => {
+				const tags = this.ctx.getTags(socket);
+				return {
+					name: tags[1] ?? "Unknown",
+					connectedAt: Number(tags[2] ?? "0"),
+				};
+			});
+			const online = devices.length > 0;
+			return {
+				online,
+				devices: devices.length,
+				deviceNames: deviceInfo.map((device) => device.name),
+				deviceInfo,
+				timestamp: Date.now(),
+			};
+		}
+
+		private async buildPayload(): Promise<string> {
+			const status = this.currentStatus();
+			const lastSeen = status.online
+				? null
+				: ((await this.ctx.storage.get<{ timestamp: number; name: string }>(
+						"lastSeen",
+					)) ?? null);
+			return JSON.stringify({ ...status, lastSeen });
+		}
+
+		private async sendStatus(socket: WebSocket): Promise<void> {
+			try {
+				socket.send(await this.buildPayload());
 			} catch {}
 		}
+
+		private async broadcastStatus(): Promise<void> {
+			const payload = await this.buildPayload();
+			for (const socket of this.ctx.getWebSockets("browser")) {
+				try {
+					socket.send(payload);
+				} catch {}
+			}
+		}
 	}
-}
