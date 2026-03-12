@@ -44,6 +44,7 @@ export function Chat({
 	const prevGridSizeRef = useRef<{ width: number; height: number } | null>(
 		null,
 	);
+	const isAtBottomRef = useRef(true);
 	const pendingFlipLeft = useRef<number | null>(null);
 	// Two-step animation guards: both must be true before the new input reveals
 	const flipDoneRef = useRef(true);
@@ -120,6 +121,27 @@ export function Chat({
 	useEffect(() => {
 		inputRef.current?.focus();
 	}, []);
+
+	// Track whether the user is scrolled to the bottom
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		const onScroll = () => {
+			const threshold = 40;
+			isAtBottomRef.current =
+				el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+		};
+		el.addEventListener("scroll", onScroll, { passive: true });
+		return () => el.removeEventListener("scroll", onScroll);
+	}, []);
+
+	// Auto-scroll to bottom when new messages appear (if user hasn't scrolled up)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: messages.length, inputHidden, and inputEntering are intentional triggers — we scroll whenever the chat content changes
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el || !isAtBottomRef.current) return;
+		el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+	}, [messages.length, inputHidden, inputEntering]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once when history loads — messages and newMessageCount are populated at that point
 	useEffect(() => {

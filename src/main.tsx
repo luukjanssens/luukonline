@@ -14,7 +14,7 @@ console.log(
   👋 hey, you found the console!
 
   luuk.online is forever work in progress —
-  like every website, it's never really done.
+  it's never really done.
 
   got ideas, suggestions, or just want to say hallo?
   HMU →  halloÌ@luukjanssens.nl
