@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getWsUrl } from "../utils/ws";
+import { getStatusWsUrl } from "../utils/ws";
 
 export type OnlineStatus = "connecting" | "online" | "offline";
 
@@ -33,7 +33,7 @@ export function useOnlineStatus(): OnlineStatusResult {
 	const reconnectAttempts = useRef<number>(0);
 
 	useEffect(() => {
-		const wsUrl = getWsUrl("/status");
+		const wsUrl = getStatusWsUrl();
 
 		function connect() {
 			try {

@@ -4,3 +4,5 @@ dist
 .env
 server/node_modules
 .claude
+.dev.vars
+.wrangler

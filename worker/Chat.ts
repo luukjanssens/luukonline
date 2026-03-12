@@ -54,6 +54,7 @@ const ALLOWED_ORIGINS = new Set([
 	"https://luuk.online",
 	"http://localhost:5173",
 	"http://localhost:4173",
+	"http://localhost:8787",
 ]);
 
 function isOriginAllowed(request: Request): boolean {
@@ -90,7 +91,9 @@ export class Chat extends DurableObject<ChatEnv> {
 					return new Response("Too many connections", { status: 429 });
 				}
 
-				const { 0: client, 1: server } = new WebSocketPair();
+				const wsPair = new WebSocketPair();
+				const client = wsPair[0];
+				const server = wsPair[1];
 				const UUID_V4 =
 					/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 				const rawId = url.searchParams.get("sessionId") ?? "";

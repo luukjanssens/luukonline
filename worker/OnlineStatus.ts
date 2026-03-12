@@ -4,6 +4,7 @@ const ALLOWED_ORIGINS = new Set([
 	"https://luuk.online",
 	"http://localhost:5173",
 	"http://localhost:4173",
+	"http://localhost:8787",
 ]);
 
 function normalizeDeviceName(name: string): string {
@@ -29,13 +30,14 @@ export class OnlineStatus extends DurableObject {
 		}
 
 		// Browser status connections must come from an allowed origin
-			const origin = request.headers.get("Origin");
-			if (origin && !ALLOWED_ORIGINS.has(origin)) {
-				return new Response("Forbidden", { status: 403 });
-			}
+		const origin = request.headers.get("Origin");
+		if (origin && !ALLOWED_ORIGINS.has(origin)) {
+			return new Response("Forbidden", { status: 403 });
 		}
 
-		const { 0: clientSocket, 1: serverSocket } = new WebSocketPair();
+		const wsPair = new WebSocketPair();
+		const clientSocket = wsPair[0];
+		const serverSocket = wsPair[1];
 
 		// For device connections, include the name and connect timestamp as extra tags
 		const tags = isDevice
